@@ -38,7 +38,7 @@ public class BookingService {
     }
 
     /**
-     * Spreads a party over several rooms: every room gets one adult, then the remaining adults and
+     * Spreads a party over several rooms: every rooms gets one adult, then the remaining adults and
      * children fill rooms up to their recommended capacity; anyone left over goes into the biggest room.
      * @return per room {adults, children}
      */
