@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head(${agent.agencyName})}">
+    <title>Agent</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('explore')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="luxe-hero-banner py-4 px-4 px-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 position-relative" style="z-index: 1;">
+            <div>
+                <span class="badge bg-warning text-dark rounded-pill mb-2"><i class="bi bi-patch-check-fill"></i> Verified travel agent</span>
+                <h1 class="h2 fw-bold text-white mb-1" th:text="${agent.agencyName}">Agency</h1>
+                <div class="text-white-50 small">
+                    <span th:if="${agent.specializations}" th:text="${agent.specializations}"></span>
+                </div>
+            </div>
+            <a sec:authorize="hasRole('USER')" th:href="@{/agents/explore(agentId=${agent.id})} + '#reqForm-' + ${agent.id}" class="btn btn-luxe-gold rounded-pill px-4">
+                <i class="bi bi-send me-1"></i> Request a custom itinerary
+            </a>
+            <a sec:authorize="!isAuthenticated()" th:href="@{/register(role='USER')}" class="btn btn-luxe-gold rounded-pill px-4">Sign up to plan a trip</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="luxe-card p-4 mb-4">
+                <div class="row text-center g-2">
+                    <div class="col-4"><div class="fs-4 fw-bold" th:text="${agent.experienceYears}">0</div><small class="text-muted">years</small></div>
+                    <div class="col-4"><div class="fs-4 fw-bold" th:text="${acceptedCount}">0</div><small class="text-muted">trips planned</small></div>
+                    <div class="col-4"><div class="fs-4 fw-bold text-success" th:text="${agent.rankingScore}">0</div><small class="text-muted">rank score</small></div>
+                </div>
+                <hr>
+                <h6 class="fw-bold">About</h6>
+                <p class="small text-secondary" th:text="${agent.bio != null ? agent.bio : 'This agent has not written a bio yet.'}" style="white-space: pre-line;"></p>
+                <h6 class="fw-bold" th:if="${agent.localExperiences}">Featured experiences</h6>
+                <p class="small text-secondary mb-0" th:text="${agent.localExperiences}" style="white-space: pre-line;"></p>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h5 class="fw-bold mb-3">Sample itineraries</h5>
+            <div th:each="p : ${agent.sampleItineraries}" class="luxe-card p-4 mb-3">
+                <div class="d-flex justify-content-between">
+                    <h6 class="fw-bold" th:text="${p.title}">Title</h6>
+                    <span class="small text-muted"><i class="bi bi-calendar3"></i> <span th:text="${p.durationDays}">3</span> days &bull; from $<span th:text="${#numbers.formatDecimal(p.estimatedCost, 1, 0)}"></span></span>
+                </div>
+                <p class="small text-secondary mb-0" th:text="${p.description}" style="white-space: pre-line;"></p>
+            </div>
+            <p th:if="${#lists.isEmpty(agent.sampleItineraries)}" class="text-muted small">No sample itineraries published yet.</p>
+
+            <h5 class="fw-bold mb-3 mt-4">Recommended local experiences</h5>
+            <div class="row g-3">
+                <div class="col-md-6" th:each="a : ${experiences}">
+                    <div class="luxe-card p-3 h-100">
+                        <div class="d-flex justify-content-between">
+                            <strong class="small"><i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.name}"></span></strong>
+                            <span class="small" th:text="${a.free ? 'Free' : '$' + #numbers.formatDecimal(a.estimatedCost, 1, 0)}"></span>
+                        </div>
+                        <small class="text-muted" th:text="${a.category + ' - ' + a.city}"></small>
+                        <p class="small text-secondary mb-0 mt-1" th:text="${a.description}"></p>
+                    </div>
+                </div>
+            </div>
+            <p th:if="${#lists.isEmpty(experiences)}" class="text-muted small">No recommendations yet.</p>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

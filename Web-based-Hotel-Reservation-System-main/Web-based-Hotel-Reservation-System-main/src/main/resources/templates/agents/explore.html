@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Travel agents')}">
+    <title>Travel agents</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('explore')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="luxe-hero-banner py-4 px-4 px-md-5 mb-4">
+        <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2 small"><i class="bi bi-award-fill me-1"></i> Verified local agents</span>
+        <h2 class="fw-bold text-white mb-1">Plan your trip with a local expert</h2>
+        <p class="text-white-50 mb-3 small">Tell an agent what you like &mdash; they send a day-by-day itinerary with local experiences, and update it until it is perfect.</p>
+        <form th:action="@{/agents/explore}" method="get" class="d-flex gap-2 position-relative" style="max-width: 520px; z-index: 1;">
+            <input type="text" name="q" th:value="${q}" class="form-control" placeholder="Search by specialty, e.g. wildlife, family, surfing">
+            <button class="btn btn-luxe-gold" type="submit">Search</button>
+        </form>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="row g-4">
+        <!-- AGENTS -->
+        <div class="col-lg-7">
+            <h5 class="fw-bold mb-3" th:text="${q != null and !#strings.isEmpty(q) ? 'Agents matching: ' + q : 'All verified agents'}">Agents</h5>
+            <div th:each="agent, iter : ${agents}" class="luxe-card p-4 mb-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold mb-1">
+                            <a th:href="@{/agents/{id}/profile(id=${agent.id})}" class="text-dark text-decoration-none" th:text="${agent.agencyName}">Agency</a>
+                            <span th:if="${#lists.contains(topAgents, agent)}" class="badge bg-warning text-dark ms-1"><i class="bi bi-trophy-fill"></i> Top 5</span>
+                        </h5>
+                        <div class="small text-muted">
+                            <span th:if="${agent.specializations}"><i class="bi bi-compass text-warning"></i> <span th:text="${agent.specializations}"></span> &bull; </span>
+                            <span th:text="${agent.experienceYears + ' yrs experience'}"></span> &bull;
+                            <span th:text="${agent.completedJobs + ' trips planned'}"></span>
+                        </div>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-2">
+                        <i class="bi bi-star-fill text-warning"></i> Score <span th:text="${agent.rankingScore}">0</span>
+                    </span>
+                </div>
+                <p class="small text-secondary mt-2 mb-3" th:text="${agent.bio != null ? agent.bio : agent.localExperiences}"></p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-luxe-primary btn-sm rounded-pill px-3" data-bs-toggle="collapse" th:data-bs-target="'#reqForm-' + ${agent.id}">
+                        <i class="bi bi-send me-1"></i> Request a custom itinerary
+                    </button>
+                    <a th:href="@{/agents/{id}/profile(id=${agent.id})}" class="btn btn-outline-dark btn-sm rounded-pill px-3">View profile</a>
+                </div>
+
+                <div class="collapse mt-3" th:id="'reqForm-' + ${agent.id}" th:classappend="${openAgentId != null and openAgentId == agent.id} ? 'show'">
+                    <form th:action="@{/agents/request/create}" method="post" class="border rounded-3 p-3 bg-light">
+                        <input type="hidden" name="agentId" th:value="${agent.id}">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-6"><input type="text" name="userName" class="form-control form-control-sm" placeholder="Your name" required th:value="${me != null ? me.fullName : ''}"></div>
+                            <div class="col-md-6"><input type="email" name="userEmail" class="form-control form-control-sm" placeholder="Email" required th:value="${me != null ? me.email : ''}"></div>
+                            <div class="col-md-4"><label class="small text-muted">From</label><input type="date" name="travelStart" class="form-control form-control-sm"></div>
+                            <div class="col-md-4"><label class="small text-muted">To</label><input type="date" name="travelEnd" class="form-control form-control-sm"></div>
+                            <div class="col-md-2"><label class="small text-muted">People</label><input type="number" min="1" max="50" name="travellers" class="form-control form-control-sm"></div>
+                            <div class="col-md-2"><label class="small text-muted">Budget $</label><input type="number" min="0" name="budget" class="form-control form-control-sm"></div>
+                            <div class="col-12" th:if="${!#lists.isEmpty(myBookings)}">
+                                <select name="bookingReference" class="form-select form-select-sm">
+                                    <option value="">Not linked to one of my hotel bookings</option>
+                                    <option th:each="b : ${myBookings}" th:value="${b.reference}"
+                                            th:text="${'Build around ' + b.hotel.name + ' (' + #temporals.format(b.checkInDate, 'dd MMM') + ' - ' + #temporals.format(b.checkOutDate, 'dd MMM') + ')'}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <textarea name="userPreferences" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" required
+                                  placeholder="What do you enjoy? Places you want to see, pace, kids' ages, dietary needs..."></textarea>
+                        <button type="submit" class="btn btn-luxe-gold btn-sm rounded-pill px-3"><i class="bi bi-send-check me-1"></i> Send request</button>
+                    </form>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(agents)}" class="luxe-card p-5 text-center text-muted">No verified agents match your search.</div>
+        </div>
+
+        <!-- MY REQUESTS -->
+        <div class="col-lg-5" id="my-requests">
+            <h5 class="fw-bold mb-3">My trip plans</h5>
+            <div th:each="req : ${myRequests}" class="luxe-card p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <strong th:text="${req.agentProfile.agencyName}">Agency</strong>
+                    <span class="luxe-pill" th:classappend="${req.status == 'ACCEPTED' ? 'pill-approved' : (req.status == 'REJECTED' ? 'pill-cancelled' : 'pill-pending')}"
+                          th:text="${req.status == 'PENDING_PROPOSAL' ? 'WAITING FOR AGENT' : (req.status == 'RE_REQUESTED' ? 'CHANGES REQUESTED' : req.status)}">STATUS</span>
+                </div>
+                <p class="small text-muted mb-2" th:text="${req.userPreferences}"></p>
+                <form th:if="${req.status != 'ACCEPTED'}" th:action="@{/agents/request/{id}/withdraw(id=${req.id})}" method="post" class="mb-2"
+                      onsubmit="return confirm('Withdraw this trip request? The agent will be told.');">
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0"><i class="bi bi-x-circle"></i> Withdraw request</button>
+                </form>
+
+                <div th:if="${req.status == 'RE_REQUESTED'}" class="itin-ask mb-2">
+                    <i class="bi bi-chat-square-quote"></i>
+                    <div><strong>You asked for changes</strong> <span class="text-muted">- waiting for the agent's new version</span>
+                        <div th:text="${req.reRequestFeedback}">feedback</div></div>
+                </div>
+                <div th:if="${req.currentRevision != null}" class="border rounded-3 p-3 bg-white">
+                    <div class="d-flex justify-content-between mb-1">
+                        <strong class="small text-primary"><i class="bi bi-journal-text"></i> Itinerary v<span th:text="${req.currentRevision.version}">1</span></strong>
+                        <strong class="text-success">$<span th:text="${#numbers.formatDecimal(req.currentRevision.price, 1, 2)}">0</span></strong>
+                    </div>
+                    <div th:if="${req.currentRevision.requestedChanges}" class="small text-muted mb-1"><i class="bi bi-chat-square-quote"></i> You asked: <span th:text="${req.currentRevision.requestedChanges}"></span></div>
+                    <div th:if="${req.currentRevision.changeNote}" class="small fst-italic text-success mb-1"><i class="bi bi-arrow-repeat"></i> What changed: <span th:text="${req.currentRevision.changeNote}"></span></div>
+                    <p class="small mb-2" th:text="${req.currentRevision.plan}" style="white-space: pre-line;"></p>
+                    <div th:if="${!#lists.isEmpty(req.currentRevision.attractions)}" class="mb-2">
+                        <div class="small fw-semibold">Recommended experiences</div>
+                        <span th:each="a : ${req.currentRevision.attractions}" class="amenity-chip me-1 mb-1">
+                            <i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.name}"></span>
+                        </span>
+                    </div>
+                    <details th:if="${#lists.size(req.revisions) > 1}" class="small mb-2">
+                        <summary>Earlier versions</summary>
+                        <div th:each="rev, st : ${req.revisions}" th:if="${!st.first}" class="border-start ps-2 my-2">
+                            <strong th:text="'v' + ${rev.version}"></strong> &bull; $<span th:text="${#numbers.formatDecimal(rev.price, 1, 2)}"></span>
+                            &bull; <span class="text-muted" th:text="${#temporals.format(rev.createdAt, 'dd MMM HH:mm')}"></span>
+                            <div th:if="${rev.requestedChanges}" class="text-muted"><i class="bi bi-chat-square-quote"></i> You asked: <span th:text="${rev.requestedChanges}"></span></div>
+                            <div th:if="${rev.changeNote}" class="fst-italic"><i class="bi bi-arrow-repeat"></i> <span th:text="${rev.changeNote}"></span></div>
+                            <div class="text-muted" th:text="${rev.plan}" style="white-space: pre-line;"></div>
+                        </div>
+                    </details>
+
+                    <div th:if="${req.status == 'PROPOSED'}" class="d-flex gap-2 flex-wrap">
+                        <form th:action="@{/agents/request/decision}" method="post" class="m-0">
+                            <input type="hidden" name="requestId" th:value="${req.id}"><input type="hidden" name="decision" value="ACCEPT"><input type="hidden" name="version" th:value="${req.currentRevision.version}">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3"><i class="bi bi-check2-circle me-1"></i> Accept</button>
+                        </form>
+                        <button class="btn btn-sm btn-warning rounded-pill px-3" data-bs-toggle="collapse" th:data-bs-target="'#reReq-' + ${req.id}">Ask for changes</button>
+                        <form th:action="@{/agents/request/decision}" method="post" class="m-0">
+                            <input type="hidden" name="requestId" th:value="${req.id}"><input type="hidden" name="decision" value="REJECT"><input type="hidden" name="version" th:value="${req.currentRevision.version}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">Decline</button>
+                        </form>
+                    </div>
+                    <div class="collapse mt-2" th:id="'reReq-' + ${req.id}">
+                        <form th:action="@{/agents/request/decision}" method="post" class="d-flex gap-2">
+                            <input type="hidden" name="requestId" th:value="${req.id}"><input type="hidden" name="decision" value="RE_REQUEST"><input type="hidden" name="version" th:value="${req.currentRevision.version}">
+                            <input type="text" name="feedback" class="form-control form-control-sm" maxlength="500" placeholder="What should change?" required>
+                            <button type="submit" class="btn btn-sm btn-primary">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(myRequests)}" class="luxe-card p-4 text-center text-muted small">You have not requested a trip plan yet.</div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>
