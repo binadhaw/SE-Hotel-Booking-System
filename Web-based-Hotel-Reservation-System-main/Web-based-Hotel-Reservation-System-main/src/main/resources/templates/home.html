@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Hotels & stays across Sri Lanka')}">
+    <title>Hotels &amp; stays across Sri Lanka</title>
+</head>
+<body class="page-home">
+
+<div th:replace="~{fragments/navbar :: navbar('home')}"></div>
+
+<!-- Lotus ornament, reused below with <use> -->
+<svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="lotus" viewBox="0 0 64 40">
+        <path d="M32 3 C38 13 38 26 32 37 C26 26 26 13 32 3Z"/>
+        <path d="M31 37 C21 33 13 23 13 12 C21 16 28 25 31 37Z"/>
+        <path d="M33 37 C43 33 51 23 51 12 C43 16 36 25 33 37Z"/>
+        <path d="M30 38 C19 38 7 31 1 21 C11 21 23 27 30 38Z"/>
+        <path d="M34 38 C45 38 57 31 63 21 C53 21 41 27 34 38Z"/>
+    </symbol>
+</svg>
+
+<main class="app-content">
+
+    <!-- =============================== HERO =============================== -->
+    <section class="home-hero">
+        <div class="home-hero-bg"></div>
+        <div class="hero-pattern"></div>
+        <div class="hero-dust" aria-hidden="true">
+            <span th:each="i : ${#numbers.sequence(0, 15)}"
+                  th:style="${'--x:' + (i * 6.3 + 2) + '%;--d:' + (i * -1.7) + 's;--t:' + (12 + (i % 5) * 2.5) + 's;--s:' + (2 + i % 3) + 'px'}"></span>
+        </div>
+
+        <div class="container position-relative" style="z-index: 2;">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <span class="hero-greet fade-up" style="--d: .1s">
+                        <span class="lotus-badge"><svg class="lotus"><use href="#lotus"/></svg></span>
+                        <span class="si" lang="si">ආයුබෝවන්</span><span class="sep">&middot;</span>
+                        <span class="ta" lang="ta">வணக்கம்</span><span class="sep">&middot;</span>
+                        <span>Welcome to Sri Lanka</span>
+                    </span>
+
+                    <h1 class="hero-title" data-split-words="0.3">
+                        The island of <em class="text-gradient-gold">serendipity</em> awaits
+                    </h1>
+
+                    <div class="hero-rotator fade-up" style="--d: 1s" aria-label="Wake up by the Indian Ocean, above the misty tea hills, beside the ancient Lion Rock or steps from the surf">
+                        <span aria-hidden="true">Wake up</span>
+                        <span class="rot-window" aria-hidden="true">
+                            <span class="rot-track">
+                                <span>by the Indian Ocean</span>
+                                <span>above the misty tea hills</span>
+                                <span>beside the ancient Lion Rock</span>
+                                <span>where leopards roam</span>
+                                <span>steps from the surf</span>
+                                <span>by the Indian Ocean</span>
+                            </span>
+                        </span>
+                    </div>
+
+                    <p class="hero-lead fade-up" style="--d: 1.15s">
+                        Hand-picked beach villas, tea-country retreats and jungle hideaways &mdash; verified, bookable in
+                        minutes and paired with local experts who know every hidden corner of the island.
+                    </p>
+
+                    <!-- Booking search -->
+                    <form th:action="@{/hotels}" method="get" class="hero-search fade-up" style="--d: 1.3s" role="search" aria-label="Search hotels">
+                        <div class="field">
+                            <label for="heroWhere"><i class="bi bi-geo-alt"></i> Where</label>
+                            <input id="heroWhere" type="text" name="keyword" placeholder="Galle, Ella, Sigiriya..." list="heroTowns" autocomplete="off">
+                            <datalist id="heroTowns">
+                                <option th:each="d : ${destinations}" th:value="${d.name}"></option>
+                            </datalist>
+                        </div>
+                        <div class="field">
+                            <label for="heroIn">Check in</label>
+                            <input id="heroIn" type="date" name="checkIn" th:min="${today}" data-checkin>
+                        </div>
+                        <div class="field">
+                            <label for="heroOut">Check out</label>
+                            <input id="heroOut" type="date" name="checkOut" th:min="${tomorrow}" data-checkout>
+                        </div>
+                        <div class="field">
+                            <label for="heroGuests">Guests</label>
+                            <select id="heroGuests" name="guests">
+                                <option value="">Any</option>
+                                <option th:each="g : ${#numbers.sequence(1, 6)}" th:value="${g}" th:text="${g == 6 ? '6+' : g}">2</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-luxe-gold btn-search" aria-label="Search">
+                            <i class="bi bi-search"></i><span>Search</span>
+                        </button>
+                    </form>
+
+                    <div class="hero-quick d-flex flex-wrap gap-2 mt-3 fade-up" style="--d: 1.45s">
+                        <span class="text-white-50 small me-1 align-self-center">Popular:</span>
+                        <a th:each="d, st : ${destinations}" th:if="${st.index < 4}" th:href="@{/hotels(keyword=${d.name})}" th:text="${d.name}">Galle</a>
+                    </div>
+
+                    <div class="hero-trust fade-up" style="--d: 1.6s">
+                        <span><i class="bi bi-patch-check-fill"></i>Every hotel verified</span>
+                        <span><i class="bi bi-credit-card-2-front"></i>Secure card payment</span>
+                        <span><i class="bi bi-compass"></i>Local travel experts</span>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="arch-stage fade-up" style="--d: .5s" data-slideshow="5500">
+                        <div class="hero-mandala" aria-hidden="true" data-parallax="0.12">
+                            <svg viewBox="0 0 640 640" fill="none" stroke="currentColor">
+                                <circle cx="320" cy="320" r="312" stroke-width="1"/>
+                                <circle cx="320" cy="320" r="300" stroke-width="1"/>
+                                <circle cx="320" cy="320" r="282" stroke-width="7" stroke-dasharray="2 12"/>
+                                <path th:each="i : ${#numbers.sequence(0, 31)}" d="M320 58 C333 80 333 104 320 122 C307 104 307 80 320 58Z"
+                                      stroke-width="1.2" th:attr="transform=${'rotate(' + (i * 11.25) + ' 320 320)'}"/>
+                                <circle cx="320" cy="320" r="196" stroke-width="1"/>
+                                <g class="inner">
+                                    <circle cx="320" cy="320" r="176" stroke-width="10" stroke-dasharray="16 10"/>
+                                    <circle th:each="i : ${#numbers.sequence(0, 15)}" cx="320" cy="168" r="6" stroke-width="1.5"
+                                            th:attr="transform=${'rotate(' + (i * 22.5) + ' 320 320)'}"/>
+                                    <circle cx="320" cy="320" r="130" stroke-width="1"/>
+                                    <path th:each="i : ${#numbers.sequence(0, 11)}" d="M320 200 C340 232 340 268 320 296 C300 268 300 232 320 200Z"
+                                          stroke-width="1.2" th:attr="transform=${'rotate(' + (i * 30) + ' 320 320)'}"/>
+                                    <circle cx="320" cy="320" r="22" stroke-width="1.5"/>
+                                </g>
+                            </svg>
+                        </div>
+
+                        <div class="arch-outline" aria-hidden="true"></div>
+                        <div class="arch-main">
+                            <figure class="arch-slide is-active m-0">
+                                <img th:src="@{/images/stays/rock-view-pool.jpg}" alt="Pool facing the Sigiriya rock fortress">
+                                <figcaption class="arch-caption"><small>Cultural Triangle</small><strong>Sigiriya</strong></figcaption>
+                            </figure>
+                            <figure class="arch-slide m-0">
+                                <img th:src="@{/images/stays/balcony-ocean-view.jpg}" alt="Balcony above the ocean" loading="lazy">
+                                <figcaption class="arch-caption"><small>Southern coast</small><strong>Galle</strong></figcaption>
+                            </figure>
+                            <figure class="arch-slide m-0">
+                                <img th:src="@{/images/stays/nine-arch-bridge.jpg}" alt="Blue train crossing the Nine Arch Bridge in misty tea country" loading="lazy">
+                                <figcaption class="arch-caption"><small>Hill country</small><strong>Ella</strong></figcaption>
+                            </figure>
+                            <figure class="arch-slide m-0">
+                                <img th:src="@{/images/stays/surf-beach.jpg}" alt="Surfers riding waves" loading="lazy">
+                                <figcaption class="arch-caption"><small>East coast</small><strong>Arugam Bay</strong></figcaption>
+                            </figure>
+                            <figure class="arch-slide m-0">
+                                <img th:src="@{/images/stays/palm-pool-villa.jpg}" alt="Palm-lined pool villa" loading="lazy">
+                                <figcaption class="arch-caption"><small>Southern coast</small><strong>Mirissa</strong></figcaption>
+                            </figure>
+                        </div>
+                        <div class="arch-dots" role="tablist" aria-label="Choose photo">
+                            <button type="button" th:each="i : ${#numbers.sequence(1, 5)}" th:attr="aria-label=${'Photo ' + i}"></button>
+                        </div>
+
+                        <div class="arch-small" data-parallax="-0.06">
+                            <img th:src="@{/images/stays/local-cuisine.jpg}" alt="Sri Lankan rice and curry spread">
+                            <span class="tag">Rice &amp; curry, island style</span>
+                        </div>
+
+                        <div class="hero-float-card c1">
+                            <span class="icon" style="background: var(--sunset-50); color: var(--sunset-600);"><i class="bi bi-patch-check-fill"></i></span>
+                            <div><strong class="d-block">Verified stays</strong><small class="text-muted">Approved by our team</small></div>
+                        </div>
+                        <div class="hero-float-card c2">
+                            <span class="icon" style="background: var(--lagoon-50); color: var(--lagoon-600);"><i class="bi bi-clock"></i></span>
+                            <div>
+                                <span class="clock" data-clock="Asia/Colombo">--:--</span>
+                                <small class="text-muted d-block">Now in Sri Lanka (GMT+5:30)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <a href="#stats" class="scroll-cue text-decoration-none"><span></span>Discover</a>
+
+        <div class="hero-wave" aria-hidden="true">
+            <svg viewBox="0 0 1440 90" preserveAspectRatio="none">
+                <path class="gold" d="M0,32 C240,82 480,-8 720,22 C960,52 1200,82 1440,32"></path>
+                <path d="M0,40 C240,90 480,0 720,30 C960,60 1200,90 1440,40 L1440,90 L0,90 Z"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- =============================== STATS =============================== -->
+    <section class="container" id="stats">
+        <div class="stat-strip reveal">
+            <div class="row g-0">
+                <!-- Only real, non-zero figures are shown -->
+                <div class="col-6 col-lg stat-item" th:if="${hotelCount > 0}">
+                    <div class="stat-icon"><i class="bi bi-buildings"></i></div>
+                    <div class="stat-number" th:attr="data-count=${hotelCount}" th:text="${hotelCount}">0</div>
+                    <div class="stat-label">Verified hotels</div>
+                </div>
+                <div class="col-6 col-lg stat-item" th:if="${townCount > 0}">
+                    <div class="stat-icon"><i class="bi bi-geo"></i></div>
+                    <div class="stat-number" th:attr="data-count=${townCount}" th:text="${townCount}">0</div>
+                    <div class="stat-label">Towns &amp; destinations</div>
+                </div>
+                <div class="col-6 col-lg stat-item" th:if="${experienceCount > 0}">
+                    <div class="stat-icon"><i class="bi bi-compass"></i></div>
+                    <div class="stat-number" th:attr="data-count=${experienceCount}" th:text="${experienceCount}">0</div>
+                    <div class="stat-label">Local experiences</div>
+                </div>
+                <div class="col-6 col-lg stat-item" th:if="${agentCount > 0}">
+                    <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
+                    <div class="stat-number" th:attr="data-count=${agentCount}" th:text="${agentCount}">0</div>
+                    <div class="stat-label">Verified travel agents</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container mt-4">
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+    </div>
+
+    <!-- =============================== RECOMMENDED FOR YOU (tourist preferences) =============================== -->
+    <section class="home-section tight" th:if="${showPreferencePrompt != null and showPreferencePrompt}">
+        <div class="container">
+            <div class="luxe-card p-4 d-flex flex-wrap align-items-center justify-content-between gap-3 reveal">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="feature-icon mb-0"><i class="bi bi-stars"></i></div>
+                    <div>
+                        <h5 class="mb-1">Get stays picked for you</h5>
+                        <p class="text-muted mb-0 small">Tell us what you love, where you would like to go and your budget &mdash; we will tailor offers and suggestions.</p>
+                    </div>
+                </div>
+                <a th:href="@{/profile#preferences}" class="btn btn-luxe-gold">Set my preferences</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-section" th:if="${me != null}">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4 reveal">
+                <div>
+                    <div class="section-eyebrow">Recommended for you</div>
+                    <h2 class="section-title">Picked for <em th:text="${me.fullName}">you</em></h2>
+                    <p class="section-lead mb-0">
+                        Based on your preferences<span th:if="${me.preferredDestination}" th:text="${' - ' + me.preferredDestination}"></span><span
+                            th:if="${me.budgetPerNight}" th:text="${', up to $' + #numbers.formatDecimal(me.budgetPerNight, 1, 0) + ' a night'}"></span>.
+                    </p>
+                </div>
+                <a th:href="@{/profile#preferences}" class="btn btn-luxe-outline">Edit preferences</a>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4 reveal" th:each="r, st : ${recHotels}" th:style="'--reveal-delay:' + ${st.index * 0.1} + 's'">
+                    <div class="hotel-card" data-tilt>
+                        <a th:href="@{/hotels/{id}(id=${r.hotel.id})}" class="hotel-card-media">
+                            <img th:if="${r.hotel.coverImage != null}" th:src="@{${r.hotel.coverImage}}" class="hotel-card-image" th:alt="${r.hotel.name}" loading="lazy">
+                            <span class="hotel-card-badge rating-badge"><i class="bi bi-stars"></i> Match</span>
+                        </a>
+                        <div class="p-3 d-flex justify-content-between align-items-end">
+                            <div>
+                                <small class="text-muted" th:text="${r.hotel.location}">Galle</small>
+                                <h6 class="fw-semibold mb-0">
+                                    <a th:href="@{/hotels/{id}(id=${r.hotel.id})}" class="text-decoration-none" style="color: var(--lagoon-900);" th:text="${r.hotel.name}">Hotel</a>
+                                </h6>
+                            </div>
+                            <strong th:if="${r.fromPrice != null}" th:text="${'$' + #numbers.formatDecimal(r.fromPrice, 1, 0)}">$100</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal" th:each="a, st : ${recExperiences}" th:style="'--reveal-delay:' + ${(st.index + 1) * 0.1} + 's'">
+                    <div class="experience-card" th:classappend="${attractionImages.containsKey(a.name)} ? '' : 'no-photo'">
+                        <img th:if="${attractionImages.containsKey(a.name)}" th:src="@{${attractionImages.get(a.name)}}" th:alt="${a.name}" loading="lazy">
+                        <span th:unless="${attractionImages.containsKey(a.name)}" class="exp-illustration" aria-hidden="true"><i class="bi" th:classappend="${a.categoryIcon}"></i></span>
+                        <span class="exp-tag"><i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.category}">Nature</span></span>
+                        <div class="exp-body">
+                            <h5 class="mb-1 text-white" th:text="${a.name}">Name</h5>
+                            <small class="text-white-50"><i class="bi bi-geo-alt"></i> <span th:text="${a.city}">City</span></small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12" th:if="${#lists.isEmpty(recHotels) and #lists.isEmpty(recExperiences)}">
+                    <p class="text-muted">Nothing matches all of your preferences yet &mdash; try a wider budget or another destination.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== ISLAND STORY =============================== -->
+    <section class="home-section">
+        <div class="container">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-6 reveal reveal-left">
+                    <div class="story-photo">
+                        <div class="ph a"><img th:src="@{/images/stays/coast-aerial.jpg}" alt="Aerial view of a rocky islet, golden sand and palm jungle" loading="lazy"></div>
+                        <div class="ph b"><img th:src="@{/images/stays/hill-country-hotel.jpg}" alt="Colonial hill-country hotel with flower gardens" loading="lazy"></div>
+                        <div class="seal" aria-hidden="true">
+                            <svg viewBox="0 0 120 120">
+                                <defs><path id="sealPath" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"/></defs>
+                                <circle cx="60" cy="60" r="58" fill="#FBF8F1" stroke="currentColor" stroke-width="1"/>
+                                <text font-size="10.5" letter-spacing="3.2" fill="currentColor" font-family="Jost, sans-serif" font-weight="600">
+                                    <textPath href="#sealPath">SERENDIB &#183; CEYLON &#183; LANKA &#183;</textPath>
+                                </text>
+                            </svg>
+                            <svg class="lotus"><use href="#lotus"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6 reveal reveal-right">
+                    <div class="section-eyebrow">Why Sri Lanka</div>
+                    <h2 class="section-title">Serendib, Ceylon, Lanka &mdash; <em>one island, a thousand journeys</em></h2>
+                    <p class="section-lead drop-cap mb-4">
+                        Ancient traders called it Serendib &mdash; the name that gave the English language the word
+                        &ldquo;serendipity&rdquo;. In a single week you can climb a fifth-century rock fortress, sip tea where it
+                        grows, track leopards at dawn and watch the sun sink into the Indian Ocean.
+                    </p>
+                    <div class="row g-4">
+                        <div class="col-6"><div class="fact-tile"><div class="num"><span data-count="8">8</span></div><div class="lbl">UNESCO World Heritage Sites</div></div></div>
+                        <div class="col-6"><div class="fact-tile"><div class="num"><span data-count="1340">1,340</span><small> km</small></div><div class="lbl">of tropical coastline</div></div></div>
+                        <div class="col-6"><div class="fact-tile"><div class="num"><span data-count="2500">2,500</span><small>+</small></div><div class="lbl">years of recorded history</div></div></div>
+                        <div class="col-6"><div class="fact-tile"><div class="num"><span data-count="1867" data-plain>1867</span></div><div class="lbl">Ceylon tea first planted</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== ISLAND ROUTE MAP =============================== -->
+    <section class="home-section map-section" data-map>
+        <div class="hero-pattern" style="opacity: .7;"></div>
+        <div class="container position-relative">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-6 reveal">
+                    <div class="section-eyebrow">Plan your route</div>
+                    <h2 class="section-title">From ancient kingdoms <em>to golden shores</em></h2>
+                    <p class="section-lead">A grand loop of the whole island &mdash; Jaffna in the north, the ancient cities, tea country, the wild east coast and the palm-fringed south.
+                        Hover a place to preview it, or jump straight to the stays there.</p>
+                    <ol class="route-list">
+                        <li th:each="d, st : ${routeStops}">
+                            <a th:href="@{/hotels(keyword=${d.name})}" th:attr="data-dest=${d.name}" th:title="${d.tagline}">
+                                <span class="n" th:text="${st.count}">1</span>
+                                <span class="txt"><strong th:text="${d.name}">Colombo</strong><small
+                                        th:text="${d.stays > 0 ? d.stays + (d.stays == 1 ? ' stay' : ' stays') : d.region}">2 stays</small></span>
+                            </a>
+                        </li>
+                    </ol>
+                </div>
+                <div class="col-lg-6">
+                    <div class="island-map reveal reveal-zoom">
+                        <div class="map-sea" aria-hidden="true"></div>
+                        <svg viewBox="0 0 430 725" role="img" aria-label="Map of Sri Lanka with featured destinations and a suggested route">
+                            <defs>
+                                <linearGradient id="landGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0" stop-color="#2B8A71"/>
+                                    <stop offset="1" stop-color="#154A3B"/>
+                                </linearGradient>
+                            </defs>
+                            <path class="land" d="M120.8,34.8 C112.3,28.9 100.2,33.4 92.0,34.8 C83.8,36.2 66.6,41.7 63.2,44.4 C59.8,47.1 64.8,51.7 68.0,54.0 C71.2,56.3 81.0,56.3 85.6,60.4 C90.2,64.5 98.9,75.9 100.0,82.8 C101.1,89.7 96.3,101.1 93.6,108.4 C90.9,115.7 83.8,127.1 80.8,134.0 C77.8,140.9 78.7,154.1 72.8,156.4 C66.9,158.7 42.2,149.1 39.2,150.0 C36.2,150.9 47.4,158.9 52.0,162.8 C56.6,166.7 68.5,171.0 71.2,177.2 C73.9,183.4 72.3,196.2 71.2,206.0 C70.1,215.8 67.5,235.3 63.2,246.0 C58.9,256.7 42.4,272.5 40.8,281.2 C39.2,289.9 49.7,299.3 52.0,306.8 C54.3,314.3 57.0,321.7 56.8,334.0 C56.6,346.3 50.4,376.3 50.4,393.2 C50.4,410.1 55.4,437.5 56.8,452.4 C58.2,467.3 58.4,485.8 60.0,497.2 C61.6,508.6 65.5,524.4 68.0,532.4 C70.5,540.4 75.5,546.6 77.6,553.2 C79.7,559.8 79.2,568.7 82.4,578.8 C85.6,588.9 94.7,614.7 100.0,623.6 C105.3,632.5 111.7,637.1 119.2,641.2 C126.7,645.3 144.3,649.9 152.8,652.4 C161.3,654.9 170.2,660.2 178.4,658.8 C186.6,657.4 198.3,647.4 210.4,642.8 C222.5,638.2 250.9,631.4 263.2,626.8 C275.5,622.2 287.0,616.3 296.8,610.8 C306.6,605.3 322.4,596.2 332.0,588.4 C341.6,580.6 358.1,565.5 364.0,556.4 C369.9,547.3 371.5,532.2 373.6,524.4 C375.7,516.6 377.9,512.1 378.4,502.0 C378.9,491.9 377.7,466.6 376.8,454.0 C375.9,441.4 375.0,425.9 372.0,414.0 C369.0,402.1 361.7,384.5 356.0,370.8 C350.3,357.1 338.9,330.6 332.0,318.0 C325.1,305.4 315.3,293.1 308.0,282.8 C300.7,272.5 284.2,254.9 280.8,246.0 C277.4,237.1 285.8,227.3 284.0,220.4 C282.2,213.5 274.2,205.3 268.0,198.0 C261.8,190.7 248.3,179.9 240.8,169.2 C233.3,158.5 223.4,133.5 215.2,122.8 C207.0,112.1 192.3,100.6 183.2,94.0 C174.1,87.4 160.1,84.9 151.2,76.4 C142.3,67.9 129.3,40.7 120.8,34.8 Z"/>
+                            <path class="route-bg" d="M61.6,497.2 C46.7,483.1 45.1,467.3 58.4,452.4 C71.7,437.5 120.0,424.9 141.6,407.6 C163.2,390.3 186.9,370.3 188,348.4 C189.1,326.5 168.0,306.3 148,276.4 C128.0,246.5 78.4,205.2 68,169.2 C57.6,133.2 69.6,54.3 85.6,60.4 C101.6,66.5 132.0,176.9 164,206 C196.0,235.1 245.9,207.3 277.6,234.8 C309.3,262.3 360.0,354.0 354.4,370.8 C348.8,387.6 268.8,342.0 244,335.6 C219.2,329.2 215.5,315.1 205.6,332.4 C195.7,349.7 184.3,413.2 184.8,439.6 C185.3,466.0 197.6,479.6 208.8,490.8 C220.0,502.0 223.7,503.3 252,506.8 C280.3,510.3 367.7,499.1 378.4,511.6 C389.1,524.1 335.2,562.8 316,582 C296.8,601.2 289.6,614.8 263.2,626.8 C236.8,638.8 181.6,651.6 157.6,654 C133.6,656.4 131.5,653.7 119.2,641.2 C106.9,628.7 79.2,596.1 84,578.8 C88.8,561.5 151.7,550.8 148,537.2 C144.3,523.6 76.5,511.3 61.6,497.2 Z"/>
+                            <path id="routePath" class="route-draw" pathLength="1" d="M61.6,497.2 C46.7,483.1 45.1,467.3 58.4,452.4 C71.7,437.5 120.0,424.9 141.6,407.6 C163.2,390.3 186.9,370.3 188,348.4 C189.1,326.5 168.0,306.3 148,276.4 C128.0,246.5 78.4,205.2 68,169.2 C57.6,133.2 69.6,54.3 85.6,60.4 C101.6,66.5 132.0,176.9 164,206 C196.0,235.1 245.9,207.3 277.6,234.8 C309.3,262.3 360.0,354.0 354.4,370.8 C348.8,387.6 268.8,342.0 244,335.6 C219.2,329.2 215.5,315.1 205.6,332.4 C195.7,349.7 184.3,413.2 184.8,439.6 C185.3,466.0 197.6,479.6 208.8,490.8 C220.0,502.0 223.7,503.3 252,506.8 C280.3,510.3 367.7,499.1 378.4,511.6 C389.1,524.1 335.2,562.8 316,582 C296.8,601.2 289.6,614.8 263.2,626.8 C236.8,638.8 181.6,651.6 157.6,654 C133.6,656.4 131.5,653.7 119.2,641.2 C106.9,628.7 79.2,596.1 84,578.8 C88.8,561.5 151.7,550.8 148,537.2 C144.3,523.6 76.5,511.3 61.6,497.2 Z"/>
+                            <circle class="traveller" r="5"><animateMotion dur="40s" repeatCount="indefinite" rotate="auto"><mpath href="#routePath"/></animateMotion></circle>
+                            <g class="compass" transform="translate(385 60)">
+                                <circle r="22" fill="none" stroke="currentColor" stroke-width="1"/>
+                                <path d="M0 -18 L5 0 L0 18 L-5 0Z" fill="currentColor" opacity=".8"/>
+                                <text y="-27" text-anchor="middle">N</text>
+                            </g>
+                        </svg>
+
+                        <!-- Things the island is famous for -->
+                        <span class="map-icon" style="left:50.5%;top:96.6%" tabindex="0" aria-label="Whale watching - Mirissa"><span aria-hidden="true">&#x1F40B;</span><span class="tip"><strong>Whale watching</strong>Mirissa</span></span>
+                        <span class="map-icon" style="left:95.81%;top:70.57%" tabindex="0" aria-label="Surfing - Arugam Bay"><span aria-hidden="true">&#x1F3C4;</span><span class="tip"><strong>Surfing</strong>Arugam Bay</span></span>
+                        <span class="map-icon" style="left:69.77%;top:84.41%" tabindex="0" aria-label="Leopard safari - Yala National Park"><span aria-hidden="true">&#x1F406;</span><span class="tip"><strong>Leopard safari</strong>Yala National Park</span></span>
+                        <span class="map-icon" style="left:60.00%;top:40.83%" tabindex="0" aria-label="Elephant gathering - Minneriya"><span aria-hidden="true">&#x1F418;</span><span class="tip"><strong>Elephant gathering</strong>Minneriya</span></span>
+                        <span class="map-icon" style="left:51.63%;top:72.83%" tabindex="0" aria-label="Tea estates - Hill country"><span aria-hidden="true">&#x1F343;</span><span class="tip"><strong>Tea estates</strong>Hill country</span></span>
+                        <span class="map-icon" style="left:5.4%;top:63.28%" tabindex="0" aria-label="International airport - Katunayake"><span aria-hidden="true">&#x2708;&#xFE0F;</span><span class="tip"><strong>International airport</strong>Katunayake</span></span>
+                        <span class="map-icon" style="left:10.23%;top:83.59%" tabindex="0" aria-label="Turtle hatchery - Kosgoda"><span aria-hidden="true">&#x1F422;</span><span class="tip"><strong>Turtle hatchery</strong>Kosgoda</span></span>
+                        <span class="map-icon" style="left:76.74%;top:26.90%" tabindex="0" aria-label="Beaches - Nilaveli, Trincomalee"><span aria-hidden="true">&#x1F3D6;&#xFE0F;</span><span class="tip"><strong>Beaches</strong>Nilaveli, Trincomalee</span></span>
+                        <span class="map-icon" style="left:39.53%;top:81.66%" tabindex="0" aria-label="Rainforest - Sinharaja"><span aria-hidden="true">&#x1F333;</span><span class="tip"><strong>Rainforest</strong>Sinharaja</span></span>
+                        <span class="map-icon" style="left:62.33%;top:74.48%" tabindex="0" aria-label="Scenic train ride - Nine Arch Bridge, Ella"><span aria-hidden="true">&#x1F682;</span><span class="tip"><strong>Scenic train ride</strong>Nine Arch Bridge, Ella</span></span>
+
+                        <a th:each="d, st : ${destinations}" class="map-pin"
+                           th:classappend="${(d.featured ? '' : ' minor') + (d.mapX > 300 ? ' flip' : '') + (d.mapY < 120 ? ' drop' : '') + (d.labelSide == 'l' ? ' lbl-left' : '') + (d.labelSide == 'r' ? ' lbl-right' : '')}"
+                           th:href="@{/hotels(keyword=${d.name})}" th:attr="data-dest=${d.name},aria-label=${'Stays in ' + d.name}"
+                           th:style="${'left:' + (d.mapX / 4.3) + '%;top:' + (d.mapY / 7.25) + '%;--pd:' + (st.index * 0.3) + 's'}">
+                            <span class="ring"></span><span class="core"></span>
+                            <span class="name" th:text="${d.name}">Galle</span>
+                            <span class="card-pop">
+                                <img th:src="@{${d.image}}" alt="" loading="lazy">
+                                <div>
+                                    <small class="text-uppercase" style="letter-spacing: .14em; color: var(--sunset-600); font-size: .65rem; font-weight: 600;" th:text="${d.region}">Region</small>
+                                    <strong th:text="${d.name}">Galle</strong>
+                                    <span class="d-block small text-secondary" th:text="${d.tagline}">Tagline</span>
+                                    <span class="text-muted small" th:text="${d.stays > 0 ? d.stays + (d.stays == 1 ? ' verified stay' : ' verified stays') : 'Explore the area'}">stays</span>
+                                </div>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== DESTINATIONS =============================== -->
+    <section class="home-section">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+                <div class="reveal">
+                    <div class="section-eyebrow">Destinations</div>
+                    <h2 class="section-title">Where will the island <em>take you?</em></h2>
+                    <p class="section-lead mb-0">Golden beaches in the south, misty tea country in the hills and ancient kingdoms in between.</p>
+                </div>
+                <a th:href="@{/hotels}" class="btn btn-luxe-outline reveal">All stays <i class="bi bi-arrow-right"></i></a>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-5 reveal reveal-left" th:with="d=${destinations[0]}">
+                    <a class="destination-card dest-tall" th:href="@{/hotels(keyword=${d.name})}">
+                        <img th:src="@{${d.image}}" th:alt="${d.name}" loading="lazy">
+                        <span class="dest-arrow"><i class="bi bi-arrow-up-right"></i></span>
+                        <div class="dest-body">
+                            <small class="text-uppercase" style="letter-spacing: .18em; color: var(--sunset-300);" th:text="${d.region}">Region</small>
+                            <h3 th:text="${d.name}">Galle</h3>
+                            <div class="dest-meta" th:text="${d.tagline}">Tagline</div>
+                            <div class="dest-meta mt-1" th:text="${d.stays > 0 ? d.stays + (d.stays == 1 ? ' stay' : ' stays') + ' available' : 'Explore the area'}">stays</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-7">
+                    <div class="row g-4 h-100">
+                        <div class="col-sm-6 reveal" th:each="d, st : ${destinations}" th:if="${!st.first and st.index < 5}"
+                             th:style="'--reveal-delay:' + ${st.index * 0.08} + 's'">
+                            <a class="destination-card" th:href="@{/hotels(keyword=${d.name})}">
+                                <img th:src="@{${d.image}}" th:alt="${d.name}" loading="lazy">
+                                <span class="dest-arrow"><i class="bi bi-arrow-up-right"></i></span>
+                                <div class="dest-body">
+                                    <small class="text-uppercase" style="letter-spacing: .18em; color: var(--sunset-300);" th:text="${d.region}">Region</small>
+                                    <h3 th:text="${d.name}">Ella</h3>
+                                    <div class="dest-meta" th:text="${d.tagline}">Tagline</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- marquee -->
+    <div class="marquee mb-2" aria-hidden="true">
+        <div class="marquee-track">
+            <th:block th:each="round : ${#numbers.sequence(1, 2)}">
+                <span>Galle</span><span>Mirissa</span><span>Ella</span><span>Sigiriya</span><span>Kandy</span>
+                <span>Nuwara Eliya</span><span>Arugam Bay</span><span>Bentota</span><span>Yala</span><span>Trincomalee</span>
+            </th:block>
+        </div>
+    </div>
+
+    <!-- =============================== FEATURED HOTELS =============================== -->
+    <section class="home-section">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+                <div class="reveal">
+                    <div class="section-eyebrow">Featured stays</div>
+                    <h2 class="section-title">Guest favourites <em>right now</em></h2>
+                    <p class="section-lead mb-0">Top-rated verified properties, with real reviews from guests who stayed.</p>
+                </div>
+                <a th:href="@{/hotels(sort='rating')}" class="btn btn-luxe-outline reveal">See all <i class="bi bi-arrow-right"></i></a>
+            </div>
+
+            <div class="row g-4" th:unless="${#lists.isEmpty(featured)}">
+                <div class="col-md-6 col-lg-4 reveal" th:each="r, st : ${featured}" th:style="'--reveal-delay:' + ${(st.index % 3) * 0.1} + 's'">
+                    <div class="hotel-card" data-tilt>
+                        <a th:href="@{/hotels/{id}(id=${r.hotel.id})}" class="hotel-card-media">
+                            <img th:if="${r.hotel.coverImage != null}" th:src="@{${r.hotel.coverImage}}" class="hotel-card-image" th:alt="${r.hotel.name}" loading="lazy">
+                            <div th:unless="${r.hotel.coverImage != null}" class="hotel-card-image"></div>
+                            <span class="hotel-card-badge rating-badge" th:if="${r.reviewCount > 0}">
+                                <i class="bi bi-star-fill"></i> <span th:text="${#numbers.formatDecimal(r.averageRating, 1, 1)}">4.8</span>
+                            </span>
+                        </a>
+                        <div class="p-3 p-md-4 d-flex flex-column flex-grow-1">
+                            <small class="text-muted"><i class="bi bi-geo-alt-fill" style="color: var(--sunset-500);"></i> <span th:text="${r.hotel.location}">Galle</span></small>
+                            <h5 class="fw-semibold mt-1 mb-2">
+                                <a th:href="@{/hotels/{id}(id=${r.hotel.id})}" class="text-decoration-none" style="color: var(--lagoon-900);" th:text="${r.hotel.name}">Hotel</a>
+                            </h5>
+                            <div class="d-flex flex-wrap gap-1 mb-3">
+                                <span class="amenity-chip" th:each="a, s : ${r.hotel.amenityList}" th:if="${s.index < 3}" th:text="${a}">WiFi</span>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-between align-items-end">
+                                <div th:if="${r.fromPrice != null}">
+                                    <small class="text-muted d-block">from</small>
+                                    <span class="fs-4 fw-semibold" style="color: var(--lagoon-900);" th:text="${'$' + #numbers.formatDecimal(r.fromPrice, 1, 0)}">$120</span><small class="text-muted"> / night</small>
+                                </div>
+                                <small th:if="${r.fromPrice == null}" class="text-muted">Rooms coming soon</small>
+                                <a th:href="@{/hotels/{id}(id=${r.hotel.id})}" class="btn btn-luxe-primary btn-sm">View stay</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No hotels yet -->
+            <div th:if="${#lists.isEmpty(featured)}" class="row align-items-center g-4 luxe-card p-4 p-md-5 reveal mx-0">
+                <div class="col-lg-6">
+                    <h3 class="mb-2">Our first stays are on their way</h3>
+                    <p class="text-muted mb-4">Hotel managers are setting up their properties. Own a hotel, villa or guesthouse in Sri Lanka? List it and reach travellers from day one.</p>
+                    <a th:href="@{/register(role='MANAGER')}" class="btn btn-luxe-gold"><i class="bi bi-building-add"></i> List your property</a>
+                </div>
+                <div class="col-lg-6">
+                    <div class="empty-collage">
+                        <img th:src="@{/images/stays/white-villa.jpg}" alt="" loading="lazy">
+                        <img th:src="@{/images/stays/ocean-infinity-pool.jpg}" alt="" loading="lazy">
+                        <img th:src="@{/images/stays/resort-garden-pool.jpg}" alt="" loading="lazy">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== WHY US =============================== -->
+    <section class="home-section" style="background: linear-gradient(180deg, transparent, var(--sand-100) 30%, var(--sand-100) 70%, transparent);">
+        <div class="container">
+            <div class="text-center mx-auto mb-5 reveal" style="max-width: 680px;">
+                <div class="lotus-divider mb-3"><svg class="lotus"><use href="#lotus"/></svg></div>
+                <div class="section-eyebrow">Why book with us</div>
+                <h2 class="section-title">Travel the island <em>without the guesswork</em></h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3 reveal" style="--reveal-delay: 0s">
+                    <div class="feature-tile">
+                        <div class="feature-icon"><i class="bi bi-calendar2-check"></i></div>
+                        <h5>Real-time availability</h5>
+                        <p class="text-muted mb-0">Pick your dates and see exactly which rooms are free &mdash; book one room or several for the whole family.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 reveal" style="--reveal-delay: .1s">
+                    <div class="feature-tile">
+                        <div class="feature-icon" style="background: var(--sunset-50); color: var(--sunset-600);"><i class="bi bi-shield-check"></i></div>
+                        <h5>Verified properties</h5>
+                        <p class="text-muted mb-0">Every hotel is approved by our team before it goes live, and reviews only come from guests who stayed.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 reveal" style="--reveal-delay: .2s">
+                    <div class="feature-tile">
+                        <div class="feature-icon"><i class="bi bi-credit-card-2-front"></i></div>
+                        <h5>Instant, secure payment</h5>
+                        <p class="text-muted mb-0">Pay by card for instant confirmation, apply member coupons and get your receipt straight away.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 reveal" style="--reveal-delay: .3s">
+                    <div class="feature-tile">
+                        <div class="feature-icon" style="background: var(--sunset-50); color: var(--sunset-600);"><i class="bi bi-compass"></i></div>
+                        <h5>Local travel experts</h5>
+                        <p class="text-muted mb-0">Verified agents design your day-by-day itinerary and update it until it's exactly right.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== EXPERIENCES =============================== -->
+    <section class="home-section" th:unless="${#lists.isEmpty(experiences)}">
+        <div class="container">
+            <div class="row align-items-end g-3 mb-4">
+                <div class="col-lg-7 reveal">
+                    <div class="section-eyebrow">Things to do</div>
+                    <h2 class="section-title">More than a place <em>to sleep</em></h2>
+                    <p class="section-lead mb-0">Whale watching, safaris, tea estates and sunset forts &mdash; every hotel page shows what's nearby.</p>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-sm-6 reveal reveal-zoom" th:each="a, st : ${experiences}" th:style="'--reveal-delay:' + ${(st.index % 3) * 0.1} + 's'"
+                     th:classappend="${#lists.size(experiences) % 3 == 2 and st.index >= #lists.size(experiences) - 2 ? 'col-lg-6' : 'col-lg-4'}">
+                    <div class="experience-card" th:classappend="${attractionImages.containsKey(a.name)} ? '' : 'no-photo'">
+                        <img th:if="${attractionImages.containsKey(a.name)}" th:src="@{${attractionImages.get(a.name)}}" th:alt="${a.name}" loading="lazy">
+                        <span th:unless="${attractionImages.containsKey(a.name)}" class="exp-illustration" aria-hidden="true"><i class="bi" th:classappend="${a.categoryIcon}"></i></span>
+                        <span class="exp-tag"><i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.category}">Nature</span></span>
+                        <span class="exp-price" th:text="${a.free ? 'Free' : 'from $' + #numbers.formatDecimal(a.estimatedCost, 1, 0)}">Free</span>
+                        <div class="exp-body">
+                            <h5 class="mb-1 text-white" th:text="${a.name}">Name</h5>
+                            <small class="text-white-50"><i class="bi bi-geo-alt"></i> <span th:text="${a.city}">City</span></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== OFFERS =============================== -->
+    <section class="home-section tight" th:unless="${#lists.isEmpty(offers)}">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+                <div class="reveal">
+                    <div class="section-eyebrow">Deals</div>
+                    <h2 class="section-title">Offers <em>running now</em></h2>
+                </div>
+                <a th:href="@{/promotions}" class="btn btn-luxe-outline reveal">All offers <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4 reveal" th:each="o, st : ${offers}" th:style="'--reveal-delay:' + ${st.index * 0.1} + 's'">
+                    <div class="offer-card" th:attr="data-ends-at=${offerEndsAt.get(o.id)}">
+                        <div class="offer-pct" th:text="${#numbers.formatDecimal(o.discountPercentage, 1, 0) + '%'}">20%</div>
+                        <div class="text-white-50 text-uppercase small mb-2" style="letter-spacing: .14em;">off your stay</div>
+                        <h5 class="text-white" th:text="${o.description != null ? o.description : 'Special offer'}">Offer</h5>
+                        <p class="small text-white-50 mb-3" th:text="${o.scopeLabel + (o.validUntil != null ? ' - until ' + #temporals.format(o.validUntil, 'dd MMM yyyy') : '')}">All hotels</p>
+                        <p class="offer-timer js-countdown" th:if="${offerEndsAt.get(o.id) != null}"></p>
+                        <span th:if="${o.code != null}" class="offer-code" th:attr="data-code=${o.code}" onclick="copyToClipboard(this.dataset.code, 'Coupon')"
+                              title="Click to copy" role="button" tabindex="0">
+                            <i class="bi bi-scissors"></i> <span th:text="${o.code}">CODE</span>
+                        </span>
+                        <span th:if="${o.code == null}" class="small text-white"><i class="bi bi-check2-circle"></i> Pick it on the booking form</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== TRAVEL AGENTS =============================== -->
+    <section class="home-section">
+        <div class="container">
+            <div class="agent-band reveal reveal-zoom">
+                <div class="row g-0 align-items-stretch">
+                    <div class="col-lg-6 p-4 p-md-5 d-flex flex-column justify-content-center">
+                        <div class="section-eyebrow" style="color: var(--sunset-300);">Plan with a local</div>
+                        <h2 class="section-title">Your trip, designed by someone <em style="color: var(--sunset-300);">who lives here</em></h2>
+                        <p class="text-white-50 mb-4">Tell a verified travel agent what you love. They'll send a day-by-day plan with hand-picked experiences &mdash; and keep refining it until it's perfect.</p>
+                        <div class="d-grid gap-3 mb-4">
+                            <div class="agent-step"><span class="num">1</span><div><strong>Share your wishes</strong><div class="small text-white-50">Dates, budget, travellers and what excites you.</div></div></div>
+                            <div class="agent-step"><span class="num">2</span><div><strong>Get a tailored itinerary</strong><div class="small text-white-50">With recommended attractions and a clear price.</div></div></div>
+                            <div class="agent-step"><span class="num">3</span><div><strong>Fine-tune and go</strong><div class="small text-white-50">Ask for changes anytime &mdash; every version is kept.</div></div></div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a sec:authorize="hasRole('USER')" th:href="@{/agents/explore}" class="btn btn-luxe-gold"><i class="bi bi-compass"></i> Find a travel agent</a>
+                            <a sec:authorize="!isAuthenticated()" th:href="@{/register(role='USER')}" class="btn btn-luxe-gold"><i class="bi bi-person-plus"></i> Sign up to plan a trip</a>
+                            <a sec:authorize="!isAuthenticated()" th:href="@{/register(role='AGENT')}" class="btn btn-glass">I'm a travel agent</a>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="band-photo">
+                            <img th:src="@{/images/stays/infinity-pool-sunset.jpg}" alt="Traveller relaxing by an infinity pool above a green bay at sunset" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== TESTIMONIALS (real reviews only) =============================== -->
+    <section class="home-section" th:unless="${#lists.isEmpty(testimonials)}">
+        <div class="container">
+            <div class="text-center mx-auto mb-5 reveal" style="max-width: 640px;">
+                <div class="section-eyebrow">Guest reviews</div>
+                <h2 class="section-title">Loved by <em>travellers</em></h2>
+            </div>
+            <div class="row g-4 pt-3 justify-content-center">
+                <div class="col-md-4 reveal" th:each="t, st : ${testimonials}" th:style="'--reveal-delay:' + ${st.index * 0.12} + 's'">
+                    <div class="testimonial-card">
+                        <span class="quote-mark"><i class="bi bi-quote"></i></span>
+                        <div class="stars mt-2 mb-2"><i class="bi bi-star-fill" th:each="i : ${#numbers.sequence(1, t.rating)}"></i></div>
+                        <h6 class="fw-semibold" th:if="${t.title}" th:text="${t.title}">Title</h6>
+                        <p class="text-secondary" th:text="${#strings.abbreviate(t.comment, 220)}">Comment</p>
+                        <div class="small text-muted mt-auto">
+                            <strong th:text="${t.username}">guest</strong> stayed at
+                            <a th:href="@{/hotels/{id}(id=${t.hotel.id})}" th:text="${t.hotel.name}">Hotel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =============================== CTA =============================== -->
+    <section class="home-section pt-0">
+        <div class="container">
+            <div class="cta-band reveal">
+                <img th:src="@{/images/stays/night-pool-villa.jpg}" alt="" loading="lazy">
+                <div class="lotus-divider mb-3" style="color: var(--sunset-300);"><svg class="lotus"><use href="#lotus"/></svg></div>
+                <div class="section-eyebrow justify-content-center" style="color: var(--sunset-300);">Ready when you are</div>
+                <h2 class="mb-3">Your island escape <em class="text-gradient-gold">starts here</em></h2>
+                <p class="text-white-50 mx-auto mb-4" style="max-width: 560px;">Create a free account to book in a few clicks, save on member coupons and get trip ideas from local experts.</p>
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/register}" class="btn btn-luxe-gold btn-lg px-4">Create free account</a>
+                    <a th:href="@{/hotels}" class="btn btn-glass btn-lg px-4">Browse stays</a>
+                    <a sec:authorize="!isAuthenticated()" th:href="@{/register(role='MANAGER')}" class="btn btn-glass btn-lg px-4">List your property</a>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

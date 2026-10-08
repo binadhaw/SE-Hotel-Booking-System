@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Register Hotel')}">
+    <title>Register Hotel &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar('hotels')}"></div>
+<div th:replace="~{fragments/hotel-form-parts :: formAssets}"></div>
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/hotels" class="text-decoration-none text-muted">Hotels</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">New Registration</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Register New Property</h2>
+                </div>
+                <a href="/hotels" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Directory
+                </a>
+            </div>
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-building-add text-warning fs-5"></i>
+                    <h5 class="mb-0 text-white fw-bold">Hotel Property Information</h5>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+                    <!-- enctype is required so the photos can be uploaded -->
+                    <form th:action="@{/hotels}" th:object="${hotel}" method="post" enctype="multipart/form-data">
+                        <!-- GLOBAL ERROR ALERT -->
+                        <div th:if="${#fields.hasAnyErrors() or imageError != null}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            <div>
+                                <strong>Please check the form!</strong>
+                                <span th:if="${imageError != null}" th:text="${imageError}"></span>
+                                <span th:if="${imageError == null}">Complete all required fields accurately before submitting.</span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        <!-- Hotel Name -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-building text-primary"></i> Hotel Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" th:field="*{name}" class="form-control luxe-form-control"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                                   placeholder="e.g., Grand Palace Hotel &amp; Spa" />
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                        <!-- Location -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-geo-alt-fill text-danger"></i> Destination &amp; Location <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" th:field="*{location}" class="form-control luxe-form-control"
+                                   th:classappend="${#fields.hasErrors('location')} ? 'is-invalid' : ''"
+                                   placeholder="e.g., Colombo, Western Province" />
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('location')}" th:errors="*{location}"></div>
+                        </div>
+                        <!-- Owner (admin registers on behalf of a manager) -->
+                        <div class="mb-4" sec:authorize="hasRole('ADMIN')">
+                            <label class="luxe-form-label"><i class="bi bi-person-badge text-warning"></i> Hotel manager <span class="text-danger">*</span></label>
+                            <select name="ownerUsername" class="form-select luxe-form-control" th:classappend="${ownerError != null} ? 'is-invalid' : ''">
+                                <option value="">-- choose the manager who will run this hotel --</option>
+                                <option th:each="m : ${managers}" th:value="${m.username}" th:selected="${param.ownerUsername != null and param.ownerUsername[0] == m.username}"
+                                        th:text="${m.fullName + ' (@' + m.username + ')'}"></option>
+                            </select>
+                            <div class="invalid-feedback" th:text="${ownerError}"></div>
+                            <div class="form-text">Hotels registered by an administrator are approved immediately.</div>
+                        </div>
+                        <!-- Contact -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="luxe-form-label"><i class="bi bi-telephone text-primary"></i> Reception phone</label>
+                                <input type="tel" th:field="*{contactPhone}" class="form-control luxe-form-control"
+                                       th:classappend="${#fields.hasErrors('contactPhone')} ? 'is-invalid' : ''" placeholder="+94 11 234 5678" />
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('contactPhone')}" th:errors="*{contactPhone}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label"><i class="bi bi-envelope text-primary"></i> Reservations email</label>
+                                <input type="email" th:field="*{contactEmail}" class="form-control luxe-form-control"
+                                       th:classappend="${#fields.hasErrors('contactEmail')} ? 'is-invalid' : ''" placeholder="reservations@hotel.lk" />
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('contactEmail')}" th:errors="*{contactEmail}"></div>
+                            </div>
+                        </div>
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-card-text text-secondary"></i> Property Description
+                            </label>
+                            <textarea th:field="*{description}" class="form-control luxe-form-control"
+                                      th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"
+                                      rows="3" maxlength="255" placeholder="Provide an evocative summary of the property, views, and experience..."></textarea>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
+                        </div>
+                        <!-- Hotel Photos -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-images text-success"></i> Hotel Photos <span class="text-danger">*</span>
+                            </label>
+                            <div th:replace="~{fragments/hotel-form-parts :: imageUploader(null, ${maxImages})}"></div>
+                        </div>
+                        <!-- Amenities (click to select) -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-stars text-warning"></i> Key Amenities &amp; Features
+                            </label>
+                            <div class="form-text small text-muted mb-2">Click every amenity your property offers.</div>
+                            <div th:replace="~{fragments/hotel-form-parts :: amenityPicker(${amenityOptions}, ${selectedAmenities})}"></div>
+                        </div>
+                        <hr class="my-4 border-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="/hotels" class="btn btn-luxe-outline rounded-pill">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4">
+                                <i class="bi bi-check2-circle me-1"></i> Submit Registration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
