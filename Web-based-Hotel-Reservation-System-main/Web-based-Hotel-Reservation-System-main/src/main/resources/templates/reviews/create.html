@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Review your stay')}">
+    <title>Review your stay</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('bookings')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-4 px-4">
+                    <h4 class="text-white fw-bold mb-0"><i class="bi bi-star-half text-warning me-2"></i>How was your stay?</h4>
+                    <small class="text-white-50">
+                        <span th:text="${booking.hotel.name}">Hotel</span> &bull;
+                        <span th:text="${#temporals.format(booking.checkInDate, 'dd MMM')}"></span> &ndash;
+                        <span th:text="${#temporals.format(booking.checkOutDate, 'dd MMM yyyy')}"></span> &bull;
+                        <span th:text="${booking.displayReference}"></span>
+                    </small>
+                </div>
+                <div class="luxe-card-body p-4">
+                    <form th:action="${review != null} ? @{/reviews/{id}/update(id=${review.id})} : @{/reviews}" method="post">
+                        <input type="hidden" name="bookingId" th:value="${booking.id}" th:if="${review == null}">
+
+                        <label class="luxe-form-label mb-2">Your rating <span class="text-danger">*</span></label>
+                        <div class="star-input mb-4" role="radiogroup" aria-label="Rating">
+                            <th:block th:each="i : ${#numbers.sequence(5, 1)}">
+                                <input type="radio" name="rating" th:id="${'star' + i}" th:value="${i}" required th:checked="${review != null and review.rating == i}">
+                                <label th:for="${'star' + i}" th:title="${i + ' star' + (i > 1 ? 's' : '')}"><i class="bi bi-star-fill"></i></label>
+                            </th:block>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="luxe-form-label" for="title">Headline</label>
+                            <input type="text" id="title" name="title" th:value="${review != null ? review.title : ''}" class="form-control luxe-form-control" maxlength="120" placeholder="e.g. Beautiful lagoon views and friendly staff">
+                        </div>
+                        <div class="mb-4">
+                            <label class="luxe-form-label" for="comment">Your review</label>
+                            <textarea id="comment" name="comment" rows="5" maxlength="2000" class="form-control luxe-form-control"
+                                      placeholder="What did you like? What could be better? Other travellers will read this."
+                                      th:text="${review != null ? review.comment : ''}"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a th:href="@{/bookings}" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4"><i class="bi bi-send me-1"></i> <span th:text="${review != null ? 'Save changes' : 'Publish review'}">Publish review</span></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

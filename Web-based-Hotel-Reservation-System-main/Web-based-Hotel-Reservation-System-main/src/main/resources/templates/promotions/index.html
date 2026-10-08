@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Promotions & Exclusive Deals')}">
+    <title>Promotions & Exclusive Deals &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('promotions')}"></div>
+
+<main class="app-content container my-5">
+
+    <!-- HERO HEADER -->
+    <div class="luxe-hero-banner py-4 px-4 px-md-5 mb-4">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2 small">
+                    <i class="bi bi-tag-fill me-1"></i> VIP Savings &amp; Flash Sales
+                </span>
+                <h2 class="h2 fw-bold text-white mb-1">Promotions &amp; Exclusive Deals</h2>
+                <p class="text-white-50 mb-0 small">
+                    Take advantage of seasonal discounts and recurring flash coupon codes for extra savings on your stay.
+                </p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <!-- View Active Coupons Modal Trigger -->
+                <button type="button" class="btn btn-luxe-gold rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#activeCouponsModal">
+                    <i class="bi bi-ticket-detailed-fill me-1"></i> Active Flash Coupons
+                </button>
+                <a sec:authorize="hasAnyRole('MANAGER', 'ADMIN')" href="/promotions/create-type" class="btn btn-outline-light rounded-pill px-3">
+                    <i class="bi bi-plus-lg me-1"></i> Create Promotion
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SUCCESS ALERT -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- FILTER TABS -->
+    <div class="luxe-card mb-4 p-2 p-md-3">
+        <div class="d-flex gap-2 flex-wrap align-items-center justify-content-between">
+            <div class="btn-group p-1 bg-light rounded-pill border" role="group">
+                <a href="/promotions?type=ALL" class="btn btn-sm rounded-pill px-3 fw-semibold"
+                   th:classappend="${currentFilter == 'ALL'} ? 'btn-dark' : 'btn-light text-secondary'">
+                    All Promotions
+                </a>
+                <a sec:authorize="hasAnyRole('MANAGER', 'ADMIN')" href="/promotions?type=COUPON" class="btn btn-sm rounded-pill px-3 fw-semibold"
+                   th:classappend="${currentFilter == 'COUPON'} ? 'btn-warning text-dark' : 'btn-light text-secondary'">
+                    🎟️ Flash Coupons
+                </a>
+                <a href="/promotions?type=DISCOUNT" class="btn btn-sm rounded-pill px-3 fw-semibold"
+                   th:classappend="${currentFilter == 'DISCOUNT'} ? 'btn-primary' : 'btn-light text-secondary'">
+                    🏷️ Standard Discounts
+                </a>
+            </div>
+            <div class="text-muted small pe-2">
+                <i class="bi bi-info-circle me-1"></i> Flash coupons activate automatically based on cyclic timers.
+            </div>
+        </div>
+    </div>
+
+    <!-- PROMOTIONS TABLE -->
+    <div class="luxe-table-container">
+        <div class="table-responsive">
+            <table class="luxe-table">
+                <thead>
+                <tr>
+                    <th style="width: 130px;">Type</th>
+                    <th>Code / Offer Title</th>
+                    <th>Description</th>
+                    <th>Discount</th>
+                    <th>Where &amp; when</th>
+                    <th>Status</th>
+                    <th sec:authorize="hasAnyRole('MANAGER', 'ADMIN')" class="text-end pe-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="promo : ${promotions}"
+                    th:if="${#authorization.expression('hasAnyRole(''MANAGER'', ''ADMIN'')') or promo.type.name() == 'DISCOUNT'}"
+                    th:with="state=${promoStates.get(promo.id)}"
+                    th:attr="data-ends-at=${promoEndsAt.get(promo.id)}" class="promo-row">
+
+                    <td>
+                        <span th:if="${promo.type.name() == 'COUPON'}" class="badge bg-warning-subtle text-dark border border-warning px-2.5 py-1 rounded-pill fw-bold">
+                            🎟️ COUPON
+                        </span>
+                        <span th:if="${promo.type.name() == 'DISCOUNT'}" class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 rounded-pill fw-bold">
+                            🏷️ DISCOUNT
+                        </span>
+                    </td>
+
+                    <td>
+                        <span sec:authorize="hasAnyRole('MANAGER', 'ADMIN')">
+                            <span th:if="${promo.code != null}" class="coupon-code-pill small" th:text="${promo.code}" th:attr="data-code=${promo.code}" onclick="copyToClipboard(this.dataset.code, 'Promo code')" title="Click to copy code">
+                                FLASH20
+                            </span>
+                            <span th:if="${promo.code == null}" class="fw-bold text-dark">Seasonal Discount</span>
+                        </span>
+                        <span sec:authorize="!hasAnyRole('MANAGER', 'ADMIN')">
+                            <span class="fw-bold text-dark">Special Discount</span>
+                        </span>
+                    </td>
+
+                    <td class="text-secondary" th:text="${promo.description}">Flash Sale Deal</td>
+
+                    <td>
+                        <div class="fw-bold text-success fs-6" th:text="${promo.discountPercentage + '% OFF'}">20% OFF</div>
+                    </td>
+
+                    <td>
+                        <div class="small"><i class="bi bi-building me-1 text-primary"></i><strong th:text="${promo.scopeLabel}">All hotels</strong></div>
+                        <div th:if="${promo.type.name() == 'COUPON' and promo.intervalMinutes != null}" class="small">
+                            <span class="text-muted">Flash cycle:</span> <strong th:text="${promo.durationMinutes + ' of every ' + promo.intervalMinutes + ' mins'}">10 of 30</strong>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="bi bi-clock-history me-1"></i>
+                            <span th:text="${promo.validUntil != null ? 'Until ' + #temporals.format(promo.validUntil, 'dd MMM yyyy, HH:mm') : 'No end date'}">No end date</span>
+                        </div>
+                        <div th:if="${promo.terms}" class="small text-muted fst-italic" th:text="${promo.terms}"></div>
+                    </td>
+
+                    <td>
+                        <span th:switch="${state}">
+                            <span th:case="'LIVE'" class="luxe-pill pill-active"><i class="bi bi-broadcast"></i> Live</span>
+                            <span th:case="'BETWEEN_WINDOWS'" class="luxe-pill pill-pending">Paused</span>
+                            <span th:case="'SCHEDULED'" class="luxe-pill pill-pending">Scheduled</span>
+                            <span th:case="'EXPIRED'" class="luxe-pill pill-cancelled">Expired</span>
+                            <span th:case="*" class="luxe-pill pill-inactive">Switched off</span>
+                        </span>
+                        <small class="d-block text-muted mt-1 js-countdown" th:if="${state == 'LIVE' and promoEndsAt.get(promo.id) != null}"></small>
+                        <small class="d-block text-muted mt-1" th:if="${promoNextStart.get(promo.id) != null}"
+                               th:text="${'Next window ' + #temporals.format(promoNextStart.get(promo.id), 'dd MMM, HH:mm')}"></small>
+                        <small class="d-block text-muted mt-1" th:if="${state == 'SCHEDULED'}"
+                               th:text="${'Starts ' + #temporals.format(promo.validFrom, 'dd MMM, HH:mm')}"></small>
+                    </td>
+
+                    <td sec:authorize="hasAnyRole('MANAGER', 'ADMIN')" class="text-end pe-4">
+                        <div class="d-flex gap-1.5 justify-content-end" th:if="${editableIds.contains(promo.id)}">
+                            <form th:if="${promo.type.name() == 'COUPON' and promo.active and state != 'EXPIRED'}" th:action="@{/promotions/{id}/send(id=${promo.id})}" method="post" class="m-0 d-inline"
+                                  onsubmit="return confirm('Email this coupon to every tourist who opted in to promotional alerts?');">
+                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2.5" title="Email coupon to tourists">
+                                    <i class="bi bi-envelope-paper me-1"></i> Send
+                                </button>
+                            </form>
+                            <a th:href="@{/promotions/{id}/edit(id=${promo.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5" title="Edit Promotion">
+                                <i class="bi bi-pencil me-1"></i> Edit
+                            </a>
+                            <form th:action="@{/promotions/{id}/delete(id=${promo.id})}" method="post" class="m-0 d-inline" onsubmit="return confirm('Delete this promotion?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete Promotion">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(promotions)}">
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-ticket-perforated text-muted fs-1 d-block mb-3"></i>
+                        <h5 class="fw-bold text-secondary mb-1">No promotions available</h5>
+                        <p class="text-muted small mb-3">There are currently no active offers under this filter.</p>
+                        <a sec:authorize="hasAnyRole('MANAGER', 'ADMIN')" href="/promotions/create-type" class="btn btn-luxe-gold btn-sm rounded-pill px-3">
+                            <i class="bi bi-plus-lg me-1"></i> Create First Offer
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<!-- ACTIVE COUPONS MODAL (VIP Promo Wallet) -->
+<div class="modal fade" id="activeCouponsModal" tabindex="-1" aria-labelledby="activeCouponsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-dark text-white p-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="luxe-brand-icon" style="width: 32px; height: 32px; font-size: 1rem;">
+                        <i class="bi bi-lightning-charge-fill text-warning"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0" id="activeCouponsModalLabel">Active Flash Coupons</h5>
+                        <small class="text-white-50">Valid right now for instant checkout discount</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <div th:if="${#lists.isEmpty(activeCoupons)}" class="text-center text-muted p-4">
+                    <i class="bi bi-hourglass-split fs-2 text-warning d-block mb-2"></i>
+                    <h6 class="fw-bold text-dark">No Flash Coupons Active Right Now</h6>
+                    <p class="small text-muted mb-0">Flash vouchers cycle periodically throughout the day. Please check back shortly!</p>
+                </div>
+
+                <div th:each="coupon : ${activeCoupons}" class="coupon-ticket mb-3 shadow-sm" th:attr="data-ends-at=${promoEndsAt.get(coupon.id)}">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="coupon-code-pill" th:text="${coupon.code}" th:attr="data-code=${coupon.code}" onclick="copyToClipboard(this.dataset.code, 'Flash Coupon')" title="Click to copy">
+                                FLASH20
+                            </span>
+                            <span class="badge bg-success text-white px-2 py-1 rounded-pill small live-badge">
+                                <i class="bi bi-check-circle me-1"></i> Live now
+                            </span>
+                            <small class="text-muted js-countdown" th:if="${promoEndsAt.get(coupon.id) != null}"></small>
+                        </div>
+                        <div class="fw-bold text-dark" th:text="${coupon.discountPercentage + '% OFF Stays'}">20% OFF</div>
+                        <small class="text-muted" th:text="${coupon.description}">Flash promotion deal</small>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-dark btn-sm rounded-pill px-3" th:attr="data-code=${coupon.code}" onclick="copyToClipboard(this.dataset.code, 'Flash Coupon')">
+                            <i class="bi bi-copy me-1"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white p-3 justify-content-between">
+                <small class="text-muted"><i class="bi bi-info-circle me-1"></i> Enter code during reservation to apply savings.</small>
+                <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

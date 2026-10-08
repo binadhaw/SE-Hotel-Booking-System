@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- ========== Styles + behaviour shared by hotels/create.html and hotels/edit.html ========== -->
+<div th:fragment="formAssets">
+    <style>
+        /* ---- Amenity chips ---- */
+        .amenity-picker { display: flex; flex-wrap: wrap; gap: .6rem; }
+        .amenity-option { margin: 0; cursor: pointer; position: relative; }
+        .amenity-option input { position: absolute; opacity: 0; pointer-events: none; }
+        .amenity-chip-select {
+            display: inline-flex; align-items: center; gap: .45rem;
+            padding: .5rem 1rem; border-radius: 999px;
+            border: 1.5px solid #dfe3ea; background: #fff;
+            font-size: .88rem; font-weight: 500; color: #44506a;
+            transition: all .15s ease; user-select: none;
+        }
+        .amenity-chip-select i { color: #9aa4b8; transition: color .15s ease; }
+        .amenity-option:hover .amenity-chip-select { border-color: #c9a227; }
+        .amenity-option input:checked + .amenity-chip-select {
+            background: #0f172a; border-color: #0f172a; color: #fff;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, .18);
+        }
+        .amenity-option input:checked + .amenity-chip-select i { color: #f5c542; }
+        .amenity-option input:focus-visible + .amenity-chip-select { outline: 2px solid #c9a227; outline-offset: 2px; }
+
+        /* ---- Photo tiles ---- */
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: .75rem; }
+        .photo-tile {
+            position: relative; margin: 0; border-radius: 12px; overflow: hidden;
+            border: 1.5px solid #e3e7ee; background: #f4f6fa; aspect-ratio: 4 / 3;
+        }
+        .photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .photo-tile .photo-badge {
+            position: absolute; left: 6px; top: 6px; font-size: .68rem; font-weight: 700;
+            letter-spacing: .04em; text-transform: uppercase;
+            background: #c9a227; color: #1a1a1a; padding: 2px 8px; border-radius: 999px;
+        }
+        /* existing photos: tick "Remove" to delete on save */
+        .photo-tile.removable { cursor: pointer; }
+        .photo-tile.removable input { position: absolute; opacity: 0; pointer-events: none; }
+        .photo-tile .photo-remove {
+            position: absolute; inset: auto 0 0 0; text-align: center; padding: 5px 0;
+            font-size: .75rem; font-weight: 600; color: #fff;
+            background: linear-gradient(transparent, rgba(15, 23, 42, .85));
+        }
+        .photo-tile.removable input:checked ~ img { opacity: .35; filter: grayscale(1); }
+        .photo-tile.removable input:checked ~ .photo-remove { background: #dc3545; }
+        .photo-tile.removable input:checked ~ .photo-remove::before { content: "Will be removed \00b7  "; }
+        .photo-hint { font-size: .8rem; color: #6b7690; }
+    </style>
+
+    <script th:inline="none">
+        document.addEventListener('DOMContentLoaded', function () {
+            /* ----- Amenities: select all / clear / counter ----- */
+            var boxes = document.querySelectorAll('input[name="amenityList"]');
+            var amenityCount = document.getElementById('amenityCount');
+            function updateAmenityCount() {
+                var n = 0;
+                boxes.forEach(function (b) { if (b.checked) n++; });
+                if (amenityCount) amenityCount.textContent = n;
+            }
+            boxes.forEach(function (b) { b.addEventListener('change', updateAmenityCount); });
+            var selAll = document.getElementById('amenitySelectAll');
+            var selNone = document.getElementById('amenityClear');
+            if (selAll) selAll.addEventListener('click', function () {
+                boxes.forEach(function (b) { b.checked = true; }); updateAmenityCount();
+            });
+            if (selNone) selNone.addEventListener('click', function () {
+                boxes.forEach(function (b) { b.checked = false; }); updateAmenityCount();
+            });
+            updateAmenityCount();
+
+            /* ----- Photos: preview + client-side validation ----- */
+            var input = document.getElementById('hotelImages');
+            if (!input) return;
+            var form = input.closest('form');
+            var maxImages = parseInt(input.getAttribute('data-max'), 10) || 8;
+            var existing = parseInt(input.getAttribute('data-existing'), 10) || 0;
+            var maxBytes = 5 * 1024 * 1024;
+            var okExt = ['jpg', 'jpeg', 'png', 'webp'];
+            var preview = document.getElementById('imagePreview');
+            var errorBox = document.getElementById('imageClientError');
+            var counter = document.getElementById('imageCounter');
+            var clearBtn = document.getElementById('clearNewImages');
+
+            function removedCount() {
+                return form.querySelectorAll('input[name="removeImages"]:checked').length;
+            }
+
+            function problem() {
+                var files = Array.prototype.slice.call(input.files);
+                var total = existing - removedCount() + files.length;
+                for (var i = 0; i < files.length; i++) {
+                    var name = files[i].name || '';
+                    var ext = name.indexOf('.') > -1 ? name.split('.').pop().toLowerCase() : '';
+                    if (okExt.indexOf(ext) === -1) return '"' + name + '" is not a supported image (use JPG, PNG or WEBP).';
+                    if (files[i].size > maxBytes) return '"' + name + '" is larger than 5 MB.';
+                }
+                if (total > maxImages) return 'You can upload at most ' + maxImages + ' photos.';
+                if (total < 1) return 'Please add at least one photo.';
+                return '';
+            }
+
+            function refresh(showProblem) {
+                var files = Array.prototype.slice.call(input.files);
+                preview.innerHTML = '';
+                files.forEach(function (f, idx) {
+                    var tile = document.createElement('div');
+                    tile.className = 'photo-tile';
+                    var img = document.createElement('img');
+                    img.src = URL.createObjectURL(f);
+                    img.alt = 'New photo';
+                    tile.appendChild(img);
+                    if (existing - removedCount() === 0 && idx === 0) {
+                        var badge = document.createElement('span');
+                        badge.className = 'photo-badge';
+                        badge.textContent = 'Cover';
+                        tile.appendChild(badge);
+                    }
+                    preview.appendChild(tile);
+                });
+                var total = existing - removedCount() + files.length;
+                if (counter) counter.textContent = total + ' / ' + maxImages + ' photos';
+                if (clearBtn) clearBtn.classList.toggle('d-none', files.length === 0);
+                var msg = problem();
+                if (showProblem || (msg && files.length)) {
+                    errorBox.textContent = msg;
+                    errorBox.classList.toggle('d-none', !msg);
+                } else {
+                    errorBox.classList.add('d-none');
+                }
+            }
+
+            input.addEventListener('change', function () { refresh(false); });
+            form.querySelectorAll('input[name="removeImages"]').forEach(function (cb) {
+                cb.addEventListener('change', function () { refresh(false); });
+            });
+            if (clearBtn) clearBtn.addEventListener('click', function () { input.value = ''; refresh(false); });
+            form.addEventListener('submit', function (e) {
+                var msg = problem();
+                if (msg) {
+                    e.preventDefault();
+                    refresh(true);
+                    errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+            refresh(false);
+        });
+    </script>
+</div>
+
+<!-- ========== Clickable amenity chips ========== -->
+<div th:fragment="amenityPicker(options, selected)">
+    <div class="amenity-picker">
+        <label class="amenity-option" th:each="entry : ${options}">
+            <input type="checkbox" name="amenityList"
+                   th:value="${entry.key}"
+                   th:checked="${selected != null and selected.contains(entry.key)}" />
+            <span class="amenity-chip-select">
+                <i th:class="'bi ' + ${entry.value}"></i>
+                <span th:text="${entry.key}">Free WiFi</span>
+            </span>
+        </label>
+    </div>
+    <div class="d-flex align-items-center gap-3 mt-3 small">
+        <span class="text-muted"><strong id="amenityCount">0</strong> selected</span>
+        <button type="button" id="amenitySelectAll" class="btn btn-link btn-sm p-0 text-decoration-none">Select all</button>
+        <button type="button" id="amenityClear" class="btn btn-link btn-sm p-0 text-decoration-none text-danger">Clear</button>
+    </div>
+</div>
+
+<!-- ========== Photo uploader (existing photos get a "Remove" toggle on the edit page) ========== -->
+<div th:fragment="imageUploader(existingImages, maxImages)">
+    <div th:if="${existingImages != null and !#lists.isEmpty(existingImages)}" class="mb-3">
+        <div class="photo-hint mb-2">Current photos &mdash; click a photo to mark it for removal.</div>
+        <div class="photo-grid">
+            <label class="photo-tile removable" th:each="p, st : ${existingImages}">
+                <input type="checkbox" name="removeImages" th:value="${p}" />
+                <img th:src="@{${p}}" alt="Hotel photo" />
+                <span class="photo-badge" th:if="${st.first}">Cover</span>
+                <span class="photo-remove">Remove</span>
+            </label>
+        </div>
+    </div>
+
+    <input type="file" id="hotelImages" name="images" multiple
+           accept="image/png,image/jpeg,image/webp"
+           class="form-control luxe-form-control"
+           th:attr="data-max=${maxImages},data-existing=${existingImages != null ? #lists.size(existingImages) : 0}" />
+
+    <div class="d-flex justify-content-between align-items-center mt-2">
+        <span class="photo-hint">JPG, PNG or WEBP &middot; up to 5 MB each &middot; the first photo is the cover.</span>
+        <span class="d-flex align-items-center gap-3">
+            <button type="button" id="clearNewImages" class="btn btn-link btn-sm p-0 text-decoration-none text-danger d-none">Clear selection</button>
+            <span id="imageCounter" class="badge bg-light text-dark border">0 photos</span>
+        </span>
+    </div>
+
+    <div id="imageClientError" class="alert alert-danger py-2 px-3 mt-2 mb-0 small d-none" role="alert"></div>
+    <div id="imagePreview" class="photo-grid mt-3"></div>
+</div>
+
+</body>
+</html>

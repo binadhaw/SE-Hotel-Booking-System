@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Admin dashboard')}">
+    <title>Admin dashboard</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('admin_dashboard')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="h3 fw-bold mb-0"><i class="bi bi-speedometer2 text-warning me-2"></i>Platform overview</h2>
+            <small class="text-muted">Live figures across all hotels, users and bookings</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a th:href="@{/admin/activity}" class="btn btn-outline-dark btn-sm rounded-pill px-3"><i class="bi bi-list-ul me-1"></i> Activity log</a>
+            <a th:href="@{/reports/bookings.csv}" class="btn btn-luxe-gold btn-sm rounded-pill px-3"><i class="bi bi-download me-1"></i> Bookings report (CSV)</a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-blue"><i class="bi bi-people"></i></div>
+                <div><small class="text-muted">Registered users</small><h4 class="fw-bold mb-0" th:text="${userCount}">0</h4>
+                    <small class="text-muted" th:text="${tourists + (tourists == 1 ? ' tourist, ' : ' tourists, ') + managers + (managers == 1 ? ' manager, ' : ' managers, ') + agents + (agents == 1 ? ' agent' : ' agents')}"></small></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-gold"><i class="bi bi-building-check"></i></div>
+                <div><small class="text-muted">Live hotels</small><h4 class="fw-bold mb-0" th:text="${hotelsApproved}">0</h4>
+                    <small class="text-muted" th:text="${hotelsRemoved + ' removed, ' + hotelsRejected + ' rejected'}"></small></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-purple"><i class="bi bi-calendar-check"></i></div>
+                <div><small class="text-muted">Bookings</small><h4 class="fw-bold mb-0" th:text="${bookingCount}">0</h4>
+                    <small class="text-muted" th:text="${pendingBookings + ' awaiting approval'}"></small></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-green"><i class="bi bi-cash-stack"></i></div>
+                <div><small class="text-muted">Confirmed revenue</small><h4 class="fw-bold mb-0" th:text="${'$' + #numbers.formatDecimal(revenue, 1, 'COMMA', 0, 'POINT')}">$0</h4>
+                    <small class="text-muted" th:text="${'$' + #numbers.formatDecimal(refundsDue, 1, 'COMMA', 0, 'POINT') + ' refunds due'}"></small></div></div>
+        </div>
+    </div>
+
+    <!-- Needs attention -->
+    <div class="luxe-card p-3 mb-4">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <strong class="small me-2"><i class="bi bi-flag-fill text-danger"></i> Needs attention</strong>
+            <a th:href="@{/hotels(status='PENDING')}" class="btn btn-sm rounded-pill" th:classappend="${hotelsPending > 0 ? 'btn-warning' : 'btn-light'}">
+                <span th:text="${hotelsPending + (hotelsPending == 1 ? ' hotel' : ' hotels')}">0 hotels</span> to approve</a>
+            <a th:href="@{/agents/admin/manage}" class="btn btn-sm rounded-pill" th:classappend="${agentsPending > 0 ? 'btn-warning' : 'btn-light'}">
+                <span th:text="${agentsPending + (agentsPending == 1 ? ' agent' : ' agents')}">0 agents</span> to verify</a>
+            <a th:href="@{/inquiries}" class="btn btn-sm rounded-pill btn-light"><span th:text="${inquiriesPending + (inquiriesPending == 1 ? ' open inquiry' : ' open inquiries')}">0 open inquiries</span> (all hotels)</a>
+            <a th:href="@{/bookings}" class="btn btn-sm rounded-pill btn-light"><span th:text="${refundsPending + (refundsPending == 1 ? ' refund' : ' refunds')}">0 refunds</span> pending</a>
+        </div>
+    </div>
+
+    <!-- System health (proposal: administrators monitor system performance) -->
+    <div class="luxe-card p-4 mb-4" id="system-health">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+            <div>
+                <h6 class="fw-bold mb-0"><i class="bi bi-activity me-1"></i> System health</h6>
+                <small class="text-muted" th:text="${'Based on the last ' + health.recentRequests + ' page requests - up for ' + health.uptime}">Based on recent requests</small>
+            </div>
+            <span class="badge rounded-pill px-3 py-2"
+                  th:classappend="${health.status == 'Healthy' ? 'text-bg-success' : (health.status == 'Down' ? 'text-bg-danger' : 'text-bg-warning')}"
+                  th:text="${health.status}">Healthy</span>
+        </div>
+        <div class="row g-3 small">
+            <div class="col-6 col-lg-2"><div class="text-muted">Avg response</div><strong class="fs-5" th:text="${health.avgMillis + ' ms'}">0 ms</strong></div>
+            <div class="col-6 col-lg-2"><div class="text-muted">95% of pages under</div><strong class="fs-5" th:text="${health.p95Millis + ' ms'}">0 ms</strong></div>
+            <div class="col-6 col-lg-2"><div class="text-muted">Server errors</div><strong class="fs-5" th:text="${health.errorRatePct + '%'}">0%</strong></div>
+            <div class="col-6 col-lg-2"><div class="text-muted">Requests served</div><strong class="fs-5" th:text="${#numbers.formatInteger(health.requestsServed, 1, 'COMMA')}">0</strong></div>
+            <div class="col-6 col-lg-2"><div class="text-muted">Database</div>
+                <strong class="fs-5" th:text="${health.databaseUp ? 'Up' : 'Down'}" th:classappend="${health.databaseUp ? 'text-success' : 'text-danger'}">Up</strong>
+                <span class="text-muted" th:if="${health.databaseUp}" th:text="${'(' + health.databaseMillis + ' ms)'}"></span></div>
+            <div class="col-6 col-lg-2"><div class="text-muted">Memory in use</div><strong class="fs-5" th:text="${health.heapUsedMb + ' MB'}">0 MB</strong>
+                <span class="text-muted" th:text="${'of ' + health.heapMaxMb + ' MB'}"></span></div>
+        </div>
+        <details class="small mt-3" th:unless="${#lists.isEmpty(health.slowestPages)}"><summary>Slowest pages</summary>
+            <table class="table table-sm mt-2 mb-0">
+                <thead><tr><th>Page</th><th class="text-end">Requests</th><th class="text-end">Avg time</th></tr></thead>
+                <tr th:each="p : ${health.slowestPages}"><td><code th:text="${p.page}">GET /hotels</code></td>
+                    <td class="text-end" th:text="${p.requests}">0</td><td class="text-end" th:text="${p.avgMillis + ' ms'}">0 ms</td></tr>
+            </table>
+        </details>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Bookings per month -->
+        <div class="col-lg-6">
+            <div class="luxe-card p-4 h-100">
+                <h6 class="fw-bold mb-0">Booking requests per month</h6>
+                <small class="text-muted">Last 6 months, by request date</small>
+                <div class="viz-bars mt-3" role="img" aria-label="Booking requests per month">
+                    <div class="viz-col" th:each="b : ${bookingBars}" tabindex="0" th:attr="data-tip=${b.label + ': ' + b.display + ' booking(s)'}">
+                        <span class="viz-val" th:if="${b.value > 0}" th:text="${b.display}">0</span>
+                        <div class="viz-bar" th:style="'height:' + ${b.heightPct} + '%'"></div>
+                        <span class="viz-label" th:text="${b.label}">Jan</span>
+                    </div>
+                </div>
+                <details class="small mt-2"><summary>Show as table</summary>
+                    <table class="table table-sm mt-2 mb-0"><tr th:each="b : ${bookingBars}"><td th:text="${b.label}"></td><td class="text-end" th:text="${b.display}"></td></tr></table>
+                </details>
+            </div>
+        </div>
+        <!-- Revenue per month (separate chart - never a second axis) -->
+        <div class="col-lg-6">
+            <div class="luxe-card p-4 h-100">
+                <h6 class="fw-bold mb-0">Confirmed revenue per month</h6>
+                <small class="text-muted">Approved bookings, by month of stay (USD)</small>
+                <div class="viz-bars mt-3" role="img" aria-label="Confirmed revenue per month">
+                    <div class="viz-col" th:each="b : ${revenueBars}" tabindex="0" th:attr="data-tip=${b.label + ': ' + b.display}">
+                        <span class="viz-val" th:if="${b.value > 0}" th:text="${b.display}">$0</span>
+                        <div class="viz-bar" th:style="'height:' + ${b.heightPct} + '%'"></div>
+                        <span class="viz-label" th:text="${b.label}">Jan</span>
+                    </div>
+                </div>
+                <details class="small mt-2"><summary>Show as table</summary>
+                    <table class="table table-sm mt-2 mb-0"><tr th:each="b : ${revenueBars}"><td th:text="${b.label}"></td><td class="text-end" th:text="${b.display}"></td></tr></table>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Bookings by status -->
+        <div class="col-lg-4">
+            <div class="luxe-card p-4 h-100">
+                <h6 class="fw-bold mb-3">Bookings by status</h6>
+                <div th:each="e : ${bookingsByStatus}" class="d-flex justify-content-between small border-bottom py-1">
+                    <span th:text="${#strings.replace(e.key, '_', ' ')}">APPROVED</span><strong th:text="${e.value}">0</strong>
+                </div>
+                <p th:if="${#maps.isEmpty(bookingsByStatus)}" class="small text-muted mb-0">No bookings yet.</p>
+            </div>
+        </div>
+        <!-- Top hotels -->
+        <div class="col-lg-4">
+            <div class="luxe-card p-4 h-100">
+                <h6 class="fw-bold mb-3">Top hotels</h6>
+                <div th:each="t, st : ${topHotels}" class="d-flex justify-content-between small border-bottom py-1">
+                    <a th:href="@{/hotels/{id}(id=${t.hotel.id})}" class="text-decoration-none text-dark text-truncate me-2"
+                       th:text="${st.count + '. ' + t.hotel.name}">Hotel</a>
+                    <span class="text-nowrap"><strong th:text="${t.bookings}">0</strong> <span th:text="${t.bookings == 1 ? 'booking' : 'bookings'}">bookings</span></span>
+                </div>
+                <p th:if="${#lists.isEmpty(topHotels)}" class="small text-muted mb-0">No bookings yet.</p>
+            </div>
+        </div>
+        <!-- Recent activity -->
+        <div class="col-lg-4">
+            <div class="luxe-card p-4 h-100">
+                <div class="d-flex justify-content-between mb-3">
+                    <h6 class="fw-bold mb-0">Recent activity</h6>
+                    <a th:href="@{/admin/activity}" class="small text-decoration-none">All</a>
+                </div>
+                <div th:each="a : ${recentActivity}" class="d-flex gap-2 small border-bottom py-1">
+                    <i class="bi text-muted" th:classappend="${a.icon}"></i>
+                    <div class="flex-grow-1 text-truncate">
+                        <strong th:text="${a.actionLabel}">Action</strong>
+                        <span class="text-muted" th:text="${a.details}" th:title="${a.details}"></span>
+                    </div>
+                    <span class="text-muted text-nowrap" th:text="${#temporals.format(a.createdAt, 'dd MMM HH:mm')}"></span>
+                </div>
+                <p th:if="${#lists.isEmpty(recentActivity)}" class="small text-muted mb-0">Nothing recorded yet.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="viz-tooltip" id="vizTip" role="status"></div>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    // Hover / focus tooltip for the bar charts
+    (function () {
+        var tip = document.getElementById('vizTip');
+        function show(e) {
+            var col = e.currentTarget;
+            tip.textContent = col.getAttribute('data-tip');
+            var r = col.getBoundingClientRect();
+            tip.style.left = (r.left + r.width / 2 + window.scrollX) + 'px';
+            tip.style.top = (r.top + window.scrollY - 8) + 'px';
+            tip.classList.add('show');
+        }
+        function hide() { tip.classList.remove('show'); }
+        document.querySelectorAll('.viz-col').forEach(function (c) {
+            c.addEventListener('mouseenter', show);
+            c.addEventListener('focus', show);
+            c.addEventListener('mouseleave', hide);
+            c.addEventListener('blur', hide);
+        });
+    })();
+</script>
+</body>
+</html>

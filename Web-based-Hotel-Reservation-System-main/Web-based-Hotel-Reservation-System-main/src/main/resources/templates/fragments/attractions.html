@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- Nearby attractions on the hotel page (PBI-03). Needs: hotel, attractions, attractionCategories, isOwner -->
+<div th:fragment="nearby" class="luxe-card p-4 mb-4" id="nearby">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="fw-bold mb-0"><i class="bi bi-geo text-warning me-1"></i> Things to do nearby</h5>
+        <select class="form-select form-select-sm w-auto" id="attractionSort" aria-label="Sort attractions">
+            <option value="distance">Nearest</option>
+            <option value="cost">Cheapest</option>
+        </select>
+    </div>
+    <div class="form-check form-switch small mb-2">
+        <input class="form-check-input" type="checkbox" id="freeOnly">
+        <label class="form-check-label" for="freeOnly">Free activities only</label>
+    </div>
+
+    <div id="attractionList">
+        <div class="attraction-item border-top py-2" th:each="a : ${attractions}"
+             th:attr="data-distance=${a.distanceKm != null ? a.distanceKm : 9999},data-cost=${a.estimatedCost != null ? a.estimatedCost : 0}">
+            <div class="d-flex justify-content-between gap-2">
+                <strong class="small"><i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.name}">Name</span></strong>
+                <span class="small fw-semibold text-nowrap" th:classappend="${a.free} ? 'text-success'"
+                      th:text="${a.free ? 'Free' : '$' + #numbers.formatDecimal(a.estimatedCost, 1, 0)}">Free</span>
+            </div>
+            <div class="small text-muted">
+                <span th:text="${a.category}">Nature</span> &bull;
+                <span th:text="${a.distanceKm != null ? #numbers.formatDecimal(a.distanceKm, 1, 1) + ' km away' : 'in ' + a.city}">2 km</span>
+            </div>
+            <div class="small text-secondary" th:if="${a.description}" th:text="${a.description}"></div>
+            <div th:if="${isOwner and a.createdBy == #authentication.name}" class="d-flex gap-3">
+                <a th:href="@{/attractions/{id}/edit(id=${a.id})}" class="btn btn-link btn-sm p-0">Edit</a>
+                <form th:action="@{/attractions/{id}/delete(id=${a.id})}" method="post" class="m-0" onsubmit="return confirm('Remove this attraction?');">
+                    <button class="btn btn-link btn-sm text-danger p-0" type="submit">Remove</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <p th:if="${#lists.isEmpty(attractions)}" class="small text-muted mb-0">No local experiences listed for this area yet.</p>
+
+    <!-- Hotel manager adds an attraction near their hotel -->
+    <details th:if="${isOwner}" class="mt-3">
+        <summary class="small fw-semibold">Add a nearby attraction</summary>
+        <form th:action="@{/attractions}" method="post" class="mt-2">
+            <input type="hidden" name="hotelId" th:value="${hotel.id}">
+            <input type="text" name="name" class="form-control form-control-sm mb-2" placeholder="Name" required maxlength="120">
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <select name="category" class="form-select form-select-sm">
+                        <option th:each="c : ${attractionCategories}" th:value="${c}" th:text="${c}"></option>
+                    </select>
+                </div>
+                <div class="col-6"><input type="text" name="city" class="form-control form-control-sm" th:value="${hotel.location}" placeholder="Town" required></div>
+                <div class="col-6"><input type="number" step="0.1" min="0" name="distanceKm" class="form-control form-control-sm" placeholder="Distance km"></div>
+                <div class="col-6"><input type="number" step="1" min="0" name="estimatedCost" class="form-control form-control-sm" value="0" placeholder="Cost $" required></div>
+            </div>
+            <textarea name="description" class="form-control form-control-sm mb-2" rows="2" maxlength="1000" placeholder="Short description"></textarea>
+            <button class="btn btn-sm btn-dark w-100" type="submit">Add</button>
+        </form>
+    </details>
+
+    <script th:inline="none">
+        (function () {
+            var list = document.getElementById('attractionList');
+            var sort = document.getElementById('attractionSort');
+            var free = document.getElementById('freeOnly');
+            if (!list) return;
+            function apply() {
+                var key = sort.value;
+                var items = Array.prototype.slice.call(list.querySelectorAll('.attraction-item'));
+                items.sort(function (a, b) {
+                    var primary = parseFloat(a.dataset[key]) - parseFloat(b.dataset[key]);
+                    if (primary !== 0) return primary;
+                    var other = key === 'distance' ? 'cost' : 'distance';
+                    return parseFloat(a.dataset[other]) - parseFloat(b.dataset[other]);
+                });
+                items.forEach(function (el) {
+                    el.classList.toggle('d-none', free.checked && parseFloat(el.dataset.cost) > 0);
+                    list.appendChild(el);
+                });
+            }
+            sort.addEventListener('change', apply);
+            free.addEventListener('change', apply);
+        })();
+    </script>
+</div>
+
+</body>
+</html>

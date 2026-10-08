@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0F1226">
+    <title>AuraPay &bull; Secure payment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link th:href="@{/css/gateway.css}" rel="stylesheet" href="/css/gateway.css">
+</head>
+<body th:with="otpStep=${pay.status.name() == 'AWAITING_OTP'}">
+
+<header class="gw-top">
+    <div class="gw-brand">
+        <span class="gw-logo"><i class="bi bi-shield-lock-fill"></i></span>
+        <span><strong>AuraPay</strong><small>Secure checkout</small></span>
+        <span class="gw-test">Test mode</span>
+    </div>
+    <div class="gw-timer" id="timer" th:attr="data-seconds=${secondsLeft}">
+        <i class="bi bi-hourglass-split"></i> <span>Session expires in <strong id="timerText">15:00</strong></span>
+    </div>
+</header>
+
+<main class="gw-shell">
+    <!-- ============ Merchant / order side ============ -->
+    <aside class="gw-order">
+        <div class="gw-merchant">
+            <span class="gw-merchant-logo"><i class="bi bi-buildings"></i></span>
+            <div>
+                <small>Paying</small>
+                <strong>Aura Grand Luxe</strong>
+                <span class="gw-verified"><i class="bi bi-patch-check-fill"></i> Verified merchant</span>
+            </div>
+        </div>
+
+        <div class="gw-amount">
+            <small>Amount due</small>
+            <div class="gw-amount-value">
+                <span class="cur">USD</span>
+                <strong th:text="${#numbers.formatDecimal(pay.amount, 1, 'COMMA', 2, 'POINT')}">0.00</strong>
+            </div>
+            <small class="gw-ref">Ref <span th:text="${pay.reference}">BK-1</span></small>
+        </div>
+
+        <ul class="gw-items">
+            <li th:each="item : ${pay.items}">
+                <span class="gw-item-icon"><i class="bi bi-house-heart"></i></span>
+                <div><strong th:text="${item.title}">Hotel</strong><small th:text="${item.detail}">Room · dates</small></div>
+                <span th:text="${'$' + #numbers.formatDecimal(item.amount, 1, 'COMMA', 2, 'POINT')}">$0</span>
+            </li>
+        </ul>
+
+        <!-- Live card preview: flips for the CVC, re-skins itself when the brand changes -->
+        <div class="cc-wrap" th:unless="${otpStep}" aria-hidden="true">
+            <div class="cc" id="cc" data-brand="">
+                <div class="cc-inner">
+                    <div class="cc-face cc-front">
+                        <div class="cc-skins">
+                            <span class="cc-skin on" data-skin=""></span>
+                            <span class="cc-skin" data-skin="VISA"></span>
+                            <span class="cc-skin" data-skin="MASTERCARD"></span>
+                            <span class="cc-skin" data-skin="AMEX"></span>
+                            <span class="cc-skin" data-skin="OTHER"></span>
+                        </div>
+                        <div class="cc-top">
+                            <span class="cc-chip"><i></i></span>
+                            <i class="bi bi-wifi cc-nfc"></i>
+                            <span class="cc-logo" id="ccLogo"></span>
+                        </div>
+                        <div class="cc-number" id="ccNumber" data-target="cardNumber"></div>
+                        <div class="cc-bottom">
+                            <div class="cc-holder" data-target="cardHolder"><small>Card holder</small><span id="ccName">YOUR NAME</span></div>
+                            <div class="cc-exp" data-target="expiry"><small>Valid thru</small><span id="ccExp">MM/YY</span></div>
+                        </div>
+                        <span class="cc-amex-cvc" id="ccAmexCvc" data-target="cvv">&bull;&bull;&bull;&bull;</span>
+                        <span class="cc-focus" id="ccFocus"></span>
+                    </div>
+                    <div class="cc-face cc-back">
+                        <div class="cc-skins">
+                            <span class="cc-skin on" data-skin=""></span>
+                            <span class="cc-skin" data-skin="VISA"></span>
+                            <span class="cc-skin" data-skin="MASTERCARD"></span>
+                            <span class="cc-skin" data-skin="AMEX"></span>
+                            <span class="cc-skin" data-skin="OTHER"></span>
+                        </div>
+                        <div class="cc-stripe"></div>
+                        <div class="cc-sig"><span class="cc-sig-lines"></span><span class="cc-cvc" id="ccCvc">&bull;&bull;&bull;</span></div>
+                        <small class="cc-back-note">Security code &middot; never stored</small>
+                        <span class="cc-logo cc-back-logo" id="ccBackLogo"></span>
+                    </div>
+                </div>
+            </div>
+            <small class="cc-caption" id="ccCaption"><i class="bi bi-eye"></i> Live preview &middot; nothing is sent until you press Pay</small>
+        </div>
+
+        <form th:action="@{/gateway/{id}/cancel(id=${pay.id})}" method="post" class="gw-cancel">
+            <button type="submit"><i class="bi bi-arrow-left"></i> Cancel and return to Aura Grand Luxe</button>
+        </form>
+    </aside>
+
+    <!-- ============ Payment side ============ -->
+    <section class="gw-pay">
+        <ol class="gw-steps">
+            <li th:class="${otpStep} ? 'done' : 'active'"><span><i th:class="${otpStep} ? 'bi bi-check-lg' : 'bi bi-credit-card'"></i></span>Card</li>
+            <li th:class="${otpStep} ? 'active' : ''"><span><i class="bi bi-phone"></i></span>Verify</li>
+            <li><span><i class="bi bi-check2-circle"></i></span>Done</li>
+        </ol>
+
+        <div class="gw-alert" th:if="${errorMessage}" role="alert">
+            <i class="bi bi-exclamation-circle-fill"></i> <span th:text="${errorMessage}">Error</span>
+        </div>
+        <div class="gw-alert gw-alert-info" th:if="${pay.message != null and !otpStep and errorMessage == null}">
+            <i class="bi bi-info-circle-fill"></i> <span th:text="${pay.message}">Info</span>
+        </div>
+        <div class="gw-alert gw-alert-warn" th:if="${attemptsLeft > 0 and attemptsLeft < 3}">
+            <i class="bi bi-shield-exclamation"></i>
+            <span>For your security, payments pause for 15 minutes after repeated failures.
+                <strong th:text="${attemptsLeft + (attemptsLeft == 1 ? ' attempt' : ' attempts') + ' left.'}">2 attempts left.</strong></span>
+        </div>
+
+        <!-- ---------------- Step 1: card ---------------- -->
+        <div th:unless="${otpStep}" class="gw-step-body">
+            <h1>Pay with card</h1>
+            <div class="gw-brands">
+                <span data-brand="VISA" class="gw-brand-chip">VISA</span>
+                <span data-brand="MASTERCARD" class="gw-brand-chip"><i class="mc"><b></b><b></b></i> Mastercard</span>
+                <span data-brand="AMEX" class="gw-brand-chip">AMEX</span>
+            </div>
+
+            <form th:action="@{/gateway/{id}/card(id=${pay.id})}" method="post" id="cardForm" novalidate autocomplete="on">
+                <label for="cardNumber">Card number</label>
+                <div class="gw-field gw-field-number">
+                    <input type="text" id="cardNumber" name="cardNumber" inputmode="numeric" autocomplete="cc-number" maxlength="23"
+                           placeholder="1234 1234 1234 1234" th:classappend="${errorField == 'cardNumber'} ? 'is-invalid'" required>
+                    <span class="gw-brand-tag" id="brandTag"></span>
+                </div>
+                <div class="gw-msg" data-for="cardNumber"></div>
+
+                <div class="gw-row">
+                    <div>
+                        <label for="expiry">Expiry</label>
+                        <div class="gw-field">
+                            <input type="text" id="expiry" name="expiry" inputmode="numeric" autocomplete="cc-exp" maxlength="5"
+                                   placeholder="MM / YY" th:classappend="${errorField == 'expiry'} ? 'is-invalid'" required>
+                        </div>
+                        <div class="gw-msg" data-for="expiry"></div>
+                    </div>
+                    <div>
+                        <label for="cvv">CVC <i class="bi bi-question-circle" title="3 digits on the back (4 on the front for Amex)"></i></label>
+                        <div class="gw-field">
+                            <input type="password" id="cvv" name="cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4"
+                                   placeholder="CVC" th:classappend="${errorField == 'cvv'} ? 'is-invalid'" required>
+                            <i class="bi bi-credit-card-2-back gw-field-icon"></i>
+                        </div>
+                        <div class="gw-msg" data-for="cvv"></div>
+                    </div>
+                </div>
+
+                <label for="cardHolder">Name on card</label>
+                <div class="gw-field">
+                    <input type="text" id="cardHolder" name="cardHolder" autocomplete="cc-name" maxlength="60" spellcheck="false"
+                           placeholder="Full name" th:value="${cardHolder}" th:classappend="${errorField == 'cardHolder'} ? 'is-invalid'" required>
+                </div>
+                <div class="gw-msg" data-for="cardHolder"></div>
+
+                <button type="submit" class="gw-btn" id="payBtn">
+                    <i class="bi bi-lock-fill"></i> Pay <span th:text="${'$' + #numbers.formatDecimal(pay.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
+                </button>
+            </form>
+
+            <div class="gw-demo">
+                <div class="gw-demo-head"><i class="bi bi-cone-striped"></i> Test cards - no real money moves</div>
+                <div class="gw-demo-cards">
+                    <button type="button" class="ok" data-number="4242424242424242">Visa &middot; success</button>
+                    <button type="button" class="ok" data-number="5555555555554444">Mastercard &middot; success</button>
+                    <button type="button" class="ok" data-number="378282246310005">Amex &middot; success</button>
+                    <button type="button" class="bad" data-number="4000000000000002">Declined</button>
+                    <button type="button" class="bad" data-number="4000000000009995">No funds</button>
+                    <button type="button" class="bad" data-number="4000000000000127">Wrong CVC</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ---------------- Step 2: one-time code (3-D Secure style) ---------------- -->
+        <div th:if="${otpStep}" class="gw-step-body">
+            <div class="gw-otp-icon"><i class="bi bi-phone-vibrate"></i></div>
+            <h1>Confirm it's you</h1>
+            <p class="gw-sub">Your bank wants to confirm this payment of
+                <strong th:text="${'$' + #numbers.formatDecimal(pay.amount, 1, 'COMMA', 2, 'POINT')}">$0</strong>
+                with <strong th:text="${pay.cardLabel}">Visa 4242</strong>. Enter the 6-digit code.</p>
+
+            <form th:action="@{/gateway/{id}/otp(id=${pay.id})}" method="post" id="otpForm" autocomplete="off">
+                <input type="hidden" name="code" id="otpCode">
+                <div class="gw-otp" id="otpBoxes">
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1" autocomplete="one-time-code">
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2">
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3">
+                    <span class="gw-otp-gap"></span>
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4">
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5">
+                    <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6">
+                </div>
+                <small class="gw-attempts" th:text="${pay.otpAttemptsLeft + (pay.otpAttemptsLeft == 1 ? ' attempt' : ' attempts') + ' left'}">3 attempts left</small>
+                <button type="submit" class="gw-btn" id="otpBtn" disabled><i class="bi bi-shield-check"></i> Confirm payment</button>
+            </form>
+
+            <div class="gw-demo gw-demo-sms">
+                <div class="gw-sms">
+                    <span class="gw-sms-icon"><i class="bi bi-chat-dots-fill"></i></span>
+                    <div>
+                        <small>Demo bank SMS</small>
+                        <span>Your AuraPay code is <strong class="gw-code" th:text="${pay.demoOtp}">000000</strong></span>
+                    </div>
+                    <button type="button" id="fillOtp" th:attr="data-code=${pay.demoOtp}">Fill in</button>
+                </div>
+            </div>
+
+            <form th:action="@{/gateway/{id}/change-card(id=${pay.id})}" method="post" class="text-center">
+                <button type="submit" class="gw-link"><i class="bi bi-arrow-repeat"></i> Use a different card</button>
+            </form>
+        </div>
+
+        <footer class="gw-foot">
+            <span><i class="bi bi-lock"></i> Card number and CVC are never stored</span>
+            <span>Powered by <strong>AuraPay</strong> (demo gateway)</span>
+        </footer>
+    </section>
+</main>
+
+<!-- Processing overlay -->
+<div class="gw-processing" id="processing" hidden>
+    <div class="gw-processing-box">
+        <div class="gw-spinner"><i class="bi bi-shield-lock-fill"></i></div>
+        <strong id="processingTitle">Contacting your bank</strong>
+        <small>Please don't close or refresh this page.</small>
+    </div>
+</div>
+
+<script th:inline="none">
+    (function () {
+        function $(id) { return document.getElementById(id); }
+        function busy(title) { $('processingTitle').textContent = title; $('processing').hidden = false; }
+
+        // ---------- session countdown ----------
+        var timer = $('timer'), left = parseInt(timer.getAttribute('data-seconds'), 10) || 0;
+        function tick() {
+            var m = Math.floor(left / 60), s = left % 60;
+            $('timerText').textContent = m + ':' + String(s).padStart(2, '0');
+            timer.classList.toggle('is-low', left <= 120);
+            if (left <= 0) { location.reload(); return; }
+            left--;
+        }
+        tick(); setInterval(tick, 1000);
+
+        // ---------- step 1: card ----------
+        var form = $('cardForm');
+        if (form) {
+            var num = $('cardNumber'), exp = $('expiry'), cvv = $('cvv'), name = $('cardHolder'), touched = {};
+            function brandOf(d) {
+                if (/^4/.test(d)) return 'VISA';
+                if (/^(5[1-5]|2(22[1-9]|2[3-9]\d|[3-6]\d\d|7[01]\d|720))/.test(d)) return 'MASTERCARD';
+                if (/^3[47]/.test(d)) return 'AMEX';
+                if (/^(6|35|62|30|36|38)/.test(d)) return 'OTHER';
+                return '';
+            }
+            function luhn(d) {
+                var sum = 0, dbl = false;
+                for (var i = d.length - 1; i >= 0; i--) { var n = +d[i]; if (dbl) { n *= 2; if (n > 9) n -= 9; } sum += n; dbl = !dbl; }
+                return sum % 10 === 0;
+            }
+            function digits() { return num.value.replace(/\D/g, ''); }
+            // Same rules as CardDetails.problem on the server
+            var checks = {
+                cardNumber: function () {
+                    var d = digits(), b = brandOf(d);
+                    if (!d) return 'Enter your card number.';
+                    if (b === 'OTHER' || (!b && d.length >= 2)) return 'We accept Visa, Mastercard and American Express.';
+                    if (/^(\d)\1+$/.test(d)) return 'That card number is not valid.';
+                    var ok = b === 'AMEX' ? d.length === 15 : b === 'MASTERCARD' ? d.length === 16 : [13, 16, 19].indexOf(d.length) >= 0;
+                    if (!ok) return b === 'AMEX' ? 'American Express numbers have 15 digits.' : b === 'MASTERCARD' ? 'Mastercard numbers have 16 digits.' : 'Visa numbers have 16 digits.';
+                    if (!luhn(d)) return 'That card number is not valid.';
+                    return '';
+                },
+                expiry: function () {
+                    var m = /^(\d{2})\/(\d{2})$/.exec(exp.value);
+                    if (!m) return 'Enter the expiry as MM/YY.';
+                    var month = +m[1], year = 2000 + +m[2];
+                    if (month < 1 || month > 12) return 'The month must be 01-12.';
+                    var now = new Date(), cur = now.getFullYear() * 12 + now.getMonth(), e = year * 12 + month - 1;
+                    if (e < cur) return 'This card has expired.';
+                    if (e > cur + 240) return 'Check the expiry date.';
+                    return '';
+                },
+                cvv: function () {
+                    var need = brandOf(digits()) === 'AMEX' ? 4 : 3;
+                    return new RegExp('^\\d{' + need + '}$').test(cvv.value) ? '' : 'Enter the ' + need + '-digit code.';
+                },
+                cardHolder: function () {
+                    var v = name.value.trim();
+                    if (!v) return 'Enter the name on the card.';
+                    if (/\d/.test(v)) return 'The name cannot contain numbers.';
+                    if (!/^[\p{L} .'-]{2,60}$/u.test(v) || (v.match(/\p{L}/gu) || []).length < 2) return 'Use letters only, as printed on the card.';
+                    return '';
+                }
+            };
+            function show(id, force) {
+                var el = $(id), msg = checks[id](), box = document.querySelector('.gw-msg[data-for="' + id + '"]');
+                var visible = force || touched[id];
+                el.classList.toggle('is-invalid', !!(visible && msg));
+                el.classList.toggle('is-valid', !msg && el.value !== '');
+                box.textContent = visible ? msg : '';
+                return !msg;
+            }
+            function fmt(d, b) {
+                if (b === 'AMEX') return d.replace(/^(\d{0,4})(\d{0,6})(\d{0,5}).*/, function (_, a, c, e) { return [a, c, e].filter(Boolean).join(' '); });
+                return d.replace(/(\d{4})(?=\d)/g, '$1 ');
+            }
+            num.addEventListener('input', function () {
+                var d = digits().slice(0, 19), b = brandOf(d);
+                num.value = fmt(d, b);
+                $('brandTag').textContent = b && b !== 'OTHER' ? (b === 'MASTERCARD' ? 'Mastercard' : b) : '';
+                document.querySelectorAll('.gw-brand-chip').forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-brand') === b); });
+                cvv.maxLength = b === 'AMEX' ? 4 : 3;
+                show('cardNumber');
+                if (d.length === (b === 'AMEX' ? 15 : 16) && !checks.cardNumber() && document.activeElement === num) exp.focus();
+            });
+            num.addEventListener('keydown', function (e) { if (e.key.length === 1 && !/[\d ]/.test(e.key) && !e.ctrlKey && !e.metaKey) e.preventDefault(); });
+            exp.addEventListener('input', function (e) {
+                var d = exp.value.replace(/\D/g, '').slice(0, 4);
+                if (d.length === 1 && +d > 1) d = '0' + d;
+                exp.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : (d.length === 2 && e.inputType !== 'deleteContentBackward' ? d + '/' : d);
+                show('expiry');
+                if (exp.value.length === 5 && !checks.expiry()) cvv.focus();
+            });
+            cvv.addEventListener('input', function () { cvv.value = cvv.value.replace(/\D/g, '').slice(0, cvv.maxLength); show('cvv'); });
+            name.addEventListener('input', function () { name.value = name.value.replace(/\s{2,}/g, ' ').replace(/^\s+/, ''); show('cardHolder'); });
+            [num, exp, cvv, name].forEach(function (el) { el.addEventListener('blur', function () { touched[el.id] = true; show(el.id); }); });
+
+            document.querySelectorAll('.gw-demo-cards button').forEach(function (b) {
+                b.addEventListener('click', function () {
+                    num.value = b.getAttribute('data-number'); num.dispatchEvent(new Event('input'));
+                    if (!exp.value) { var yy = String((new Date().getFullYear() + 3) % 100).padStart(2, '0'); exp.value = '12/' + yy; exp.dispatchEvent(new Event('input')); }
+                    touched.cardNumber = true; show('cardNumber');
+                    cvv.focus();
+                });
+            });
+
+            form.addEventListener('submit', function (e) {
+                var ok = true, first = null;
+                ['cardNumber', 'expiry', 'cvv', 'cardHolder'].forEach(function (id) {
+                    touched[id] = true;
+                    if (!show(id, true)) { ok = false; first = first || $(id); }
+                });
+                if (!ok) { e.preventDefault(); first.focus(); form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake'); return; }
+                $('payBtn').disabled = true;
+                busy('Checking your card');
+            });
+            // ---------- live card preview ----------
+            var cc = $('cc');
+            if (cc) {
+                var LOGOS = {
+                    '': '<i class="bi bi-credit-card-2-front"></i>',
+                    VISA: '<span class="lg-visa">VISA</span>',
+                    MASTERCARD: '<span class="lg-mc"><b></b><b></b></span>',
+                    AMEX: '<span class="lg-amex">AMEX</span>',
+                    OTHER: '<span class="lg-other"><i class="bi bi-x-octagon"></i> Not accepted</span>'
+                };
+                var skinZ = 1, currentBrand = null, shownDigits = '';
+
+                function setBrand(b) {
+                    if (b === currentBrand) return;
+                    currentBrand = b;
+                    cc.setAttribute('data-brand', b);
+                    // Colour wipe: the new skin grows from the logo corner on top of the old one
+                    cc.querySelectorAll('.cc-skins').forEach(function (group) {
+                        var next = group.querySelector('.cc-skin[data-skin="' + b + '"]');
+                        group.querySelectorAll('.cc-skin').forEach(function (s) { if (s !== next) s.classList.add('leaving'); });
+                        next.classList.remove('on', 'leaving');
+                        next.style.zIndex = ++skinZ;
+                        void next.offsetWidth;
+                        next.classList.add('on');
+                        setTimeout(function () {
+                            group.querySelectorAll('.cc-skin.leaving').forEach(function (s) { if (s !== next) s.classList.remove('on', 'leaving'); });
+                        }, 750);
+                    });
+                    ['ccLogo', 'ccBackLogo'].forEach(function (id) {
+                        var el = $(id);
+                        el.innerHTML = LOGOS[b] || LOGOS[''];
+                        el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
+                    });
+                    $('ccAmexCvc').classList.toggle('show', b === 'AMEX');
+                    cvvPreview();
+                }
+
+                // Card number: one span per character, newly typed digits drop in
+                function numberPreview() {
+                    var d = digits(), b = brandOf(d);
+                    var groups = b === 'AMEX' ? [4, 6, 5] : (d.length > 16 ? [4, 4, 4, 4, 3] : [4, 4, 4, 4]);
+                    var html = '', i = 0;
+                    groups.forEach(function (len, g) {
+                        html += '<span class="cc-group">';
+                        for (var k = 0; k < len; k++, i++) {
+                            var ch = d[i];
+                            var isNew = ch !== undefined && (i >= shownDigits.length || shownDigits[i] !== ch);
+                            // Show the first 4 and last 4 digits, mask the middle like a real card preview
+                            var visible = ch !== undefined && (i < 4 || i >= d.length - 4 || d.length <= 8);
+                            html += '<span class="cc-digit' + (ch === undefined ? ' empty' : '') + (isNew ? ' new' : '') + '">'
+                                + (ch === undefined ? '•' : (visible ? ch : '•')) + '</span>';
+                        }
+                        html += '</span>';
+                    });
+                    $('ccNumber').innerHTML = html;
+                    shownDigits = d;
+                    setBrand(b);
+                }
+                function cvvPreview() {
+                    // Typed digits show as dots, the rest as faint placeholders (the code itself is never displayed)
+                    var need = currentBrand === 'AMEX' ? 4 : 3, typed = Math.min(cvv.value.length, need);
+                    var text = '•'.repeat(typed) + '·'.repeat(need - typed);
+                    $('ccCvc').textContent = text;
+                    $('ccAmexCvc').textContent = currentBrand === 'AMEX' ? text : '••••';
+                }
+
+                // Focus ring follows the field being edited; the CVC flips the card (Amex keeps it on the front)
+                var focusTimer;
+                function focusOn(id) {
+                    clearTimeout(focusTimer);
+                    var flip = id === 'cvv' && currentBrand !== 'AMEX';
+                    cc.classList.toggle('is-flipped', flip);
+                    var ring = $('ccFocus'), target = cc.querySelector('.cc-front [data-target="' + id + '"]');
+                    if (flip || !target || (id === 'cvv' && currentBrand !== 'AMEX')) { ring.classList.remove('show'); return; }
+                    ring.style.left = (target.offsetLeft - 8) + 'px';
+                    ring.style.top = (target.offsetTop - 6) + 'px';
+                    ring.style.width = (target.offsetWidth + 16) + 'px';
+                    ring.style.height = (target.offsetHeight + 12) + 'px';
+                    ring.classList.add('show');
+                }
+                function blurAll() {
+                    focusTimer = setTimeout(function () { cc.classList.remove('is-flipped'); $('ccFocus').classList.remove('show'); }, 120);
+                }
+
+                num.addEventListener('input', numberPreview);
+                name.addEventListener('input', function () { $('ccName').textContent = name.value.trim().toUpperCase() || 'YOUR NAME'; });
+                exp.addEventListener('input', function () { $('ccExp').textContent = exp.value || 'MM/YY'; });
+                cvv.addEventListener('input', cvvPreview);
+                [num, exp, cvv, name].forEach(function (el) {
+                    el.addEventListener('focus', function () { focusOn(el.id); });
+                    el.addEventListener('blur', blurAll);
+                });
+
+                // Gentle 3D tilt that follows the mouse (not while flipped)
+                var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (!reduce) {
+                    cc.addEventListener('mousemove', function (e) {
+                        if (cc.classList.contains('is-flipped')) return;
+                        var r = cc.getBoundingClientRect();
+                        var x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
+                        cc.style.setProperty('--tx', (-y * 10).toFixed(2) + 'deg');
+                        cc.style.setProperty('--ty', (x * 14).toFixed(2) + 'deg');
+                        cc.style.setProperty('--gx', ((x + 0.5) * 100).toFixed(0) + '%');
+                        cc.style.setProperty('--gy', ((y + 0.5) * 100).toFixed(0) + '%');
+                    });
+                    cc.addEventListener('mouseleave', function () { cc.style.setProperty('--tx', '0deg'); cc.style.setProperty('--ty', '0deg'); });
+                }
+
+                numberPreview();
+                if (name.value) $('ccName').textContent = name.value.trim().toUpperCase();
+            }
+
+            var serverError = document.querySelector('.gw-field input.is-invalid');
+            if (serverError) { touched[serverError.id] = true; serverError.focus(); }
+        }
+
+        // ---------- step 2: one-time code ----------
+        var otpForm = $('otpForm');
+        if (otpForm) {
+            var boxes = Array.prototype.slice.call(document.querySelectorAll('#otpBoxes input'));
+            function sync() {
+                var code = boxes.map(function (b) { return b.value; }).join('');
+                $('otpCode').value = code;
+                $('otpBtn').disabled = code.length !== 6;
+                boxes.forEach(function (b) { b.classList.toggle('filled', !!b.value); });
+            }
+            boxes.forEach(function (box, i) {
+                box.addEventListener('input', function () {
+                    box.value = box.value.replace(/\D/g, '').slice(-1);
+                    if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+                    sync();
+                });
+                box.addEventListener('keydown', function (e) {
+                    if (e.key === 'Backspace' && !box.value && i > 0) { boxes[i - 1].focus(); boxes[i - 1].value = ''; sync(); }
+                });
+                box.addEventListener('paste', function (e) {
+                    var text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                    if (!text) return;
+                    e.preventDefault();
+                    boxes.forEach(function (b, j) { b.value = text[j] || ''; });
+                    boxes[Math.min(text.length, 5)].focus();
+                    sync();
+                });
+            });
+            $('fillOtp').addEventListener('click', function () {
+                var code = this.getAttribute('data-code');
+                boxes.forEach(function (b, j) { setTimeout(function () { b.value = code[j]; sync(); }, j * 90); });
+            });
+            otpForm.addEventListener('submit', function (e) {
+                if ($('otpCode').value.length !== 6) { e.preventDefault(); return; }
+                $('otpBtn').disabled = true;
+                busy('Confirming with your bank');
+            });
+            boxes[0].focus();
+        }
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Respond to Inquiry')}">
+    <title>Respond to Inquiry &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('inquiries')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/inquiries" class="text-decoration-none text-muted">Inquiries</a></li>
+                            <li class="breadcrumb-item active" aria-current="page" th:text="'Ticket ' + ${inquiry.displayTicket}">Response</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Respond to Guest Inquiry</h2>
+                </div>
+                <a href="/inquiries" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Inquiries
+                </a>
+            </div>
+
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-reply-all-fill text-warning fs-5"></i>
+                    <h5 class="mb-0 text-white fw-bold">Inquiry Details &amp; Reply</h5>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+
+                    <!-- GUEST MESSAGE DETAILS -->
+                    <div class="p-4 bg-light rounded-3 border mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <span class="fw-bold fs-6 text-dark" th:text="${inquiry.name}">Guest Name</span>
+                                <small class="text-muted ms-2" th:text="'(' + ${inquiry.email} + ')'"></small>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill px-2.5 py-1" th:text="${inquiry.senderRole}">USER</span>
+                        </div>
+                        <h6 class="fw-bold text-primary mb-2" th:text="${inquiry.subject}">Subject</h6>
+                        <p class="text-secondary small mb-0" th:text="${inquiry.message}">Message text</p>
+                    </div>
+
+                    <form th:action="@{/inquiries/{id}/respond(id=${inquiry.id})}" method="post">
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-chat-left-text text-primary"></i> Concierge Response / Reason for Action
+                            </label>
+                            <textarea name="response" rows="4" class="form-control luxe-form-control" required th:text="${inquiry.response}"
+                                      placeholder="Write your official reply or explanation..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="/inquiries" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <div class="d-flex gap-2">
+                                <button type="submit" name="action" value="ignore" class="btn btn-outline-danger rounded-pill px-3">
+                                    <i class="bi bi-slash-circle me-1"></i> Ignore with Reason
+                                </button>
+                                <button type="submit" name="action" value="resolve" class="btn btn-luxe-primary rounded-pill px-4">
+                                    <i class="bi bi-send-check me-1"></i> Send Response
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

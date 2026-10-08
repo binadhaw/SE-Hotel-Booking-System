@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Create an account')}">
+    <title>Create an account</title>
+</head>
+<body class="page-auth">
+
+<div th:replace="~{fragments/navbar :: navbar('register')}"></div>
+
+<main class="app-content auth-scene">
+    <div class="auth-bg" aria-hidden="true"><span class="glow g1"></span><span class="glow g2"></span></div>
+
+    <div class="container position-relative">
+        <div class="row gy-5 gx-lg-5">
+
+            <!-- Story side -->
+            <div class="col-lg-5 auth-story auth-story-sticky">
+                <span class="auth-greet flow-rise">
+                    <span class="si">ආයුබෝවන්</span> <span class="sep"></span> Ayubowan &mdash; join free
+                </span>
+                <h1 class="auth-title flow-rise" style="--d: .1s">Book, plan and explore <em>Sri Lanka</em> your way.</h1>
+                <p class="auth-lead flow-rise" style="--d: .2s">One account for hotels across the island, trip plans from local travel experts and member-only offers.</p>
+
+                <div class="postcards postcards-sm" aria-hidden="true">
+                    <figure class="postcard pc-1">
+                        <img th:src="@{/images/stays/hillside-terrace.jpg}" alt="">
+                        <figcaption>Hill-country views</figcaption>
+                    </figure>
+                    <figure class="postcard pc-2">
+                        <img th:src="@{/images/stays/surf-beach.jpg}" alt="">
+                        <figcaption>Surf &amp; sand</figcaption>
+                        <span class="stamp"><i class="bi bi-water"></i><small>Coast</small></span>
+                    </figure>
+                </div>
+
+                <ul class="auth-perks flow-rise" style="--d: .3s">
+                    <li><span><i class="bi bi-calendar2-check"></i></span><div><strong>Live availability</strong><small>See which rooms are free for your exact nights.</small></div></li>
+                    <li><span><i class="bi bi-credit-card-2-front"></i></span><div><strong>Instant confirmation</strong><small>Pay by card and your booking is confirmed straight away.</small></div></li>
+                    <li><span><i class="bi bi-map"></i></span><div><strong>Plans from local experts</strong><small>Verified travel agents build your itinerary.</small></div></li>
+                </ul>
+            </div>
+
+            <!-- Form -->
+            <div class="col-lg-7">
+                <div class="auth-card auth-card-wide flow-rise" style="--d: .15s">
+                    <div class="auth-card-head">
+                        <span class="auth-badge"><i class="bi bi-stars"></i></span>
+                        <div>
+                            <h2>Create your account</h2>
+                            <p>It takes about a minute.</p>
+                        </div>
+                    </div>
+
+                    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+                    <form th:action="@{/register}" th:object="${form}" method="post" novalidate id="registerForm">
+
+                        <!-- Account type -->
+                        <span class="auth-label d-block mb-2">I'm joining as</span>
+                        <div class="role-picker mb-1">
+                            <input type="radio" class="btn-check" th:field="*{role}" value="USER" id="roleUser">
+                            <label class="role-tile" for="roleUser">
+                                <i class="bi bi-suitcase2"></i>
+                                <span><strong>Traveller</strong><small>Search &amp; book stays</small></span>
+                            </label>
+                            <input type="radio" class="btn-check" th:field="*{role}" value="MANAGER" id="roleManager">
+                            <label class="role-tile" for="roleManager">
+                                <i class="bi bi-building"></i>
+                                <span><strong>Hotel manager</strong><small>List a property</small></span>
+                            </label>
+                            <input type="radio" class="btn-check" th:field="*{role}" value="AGENT" id="roleAgent">
+                            <label class="role-tile" for="roleAgent">
+                                <i class="bi bi-compass"></i>
+                                <span><strong>Travel agent</strong><small>Plan itineraries</small></span>
+                            </label>
+                        </div>
+                        <div class="text-danger small mb-2" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
+
+                        <div class="auth-section"><span>1</span> About you</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="auth-label" for="fullName">Full name <span class="req">*</span></label>
+                                <input type="text" id="fullName" th:field="*{fullName}" class="form-control auth-input" autocomplete="name" placeholder="As on your passport" th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="auth-label" for="username">Username <span class="req">*</span></label>
+                                <input type="text" id="username" th:field="*{username}" class="form-control auth-input" autocomplete="username" placeholder="e.g. jane.travels" th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{username}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="auth-label" for="email">Email <span class="req">*</span></label>
+                                <input type="email" id="email" th:field="*{email}" class="form-control auth-input" autocomplete="email" placeholder="you@example.com" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="auth-label" for="phone">Phone <span class="opt">(optional)</span></label>
+                                <input type="tel" id="phone" th:field="*{phone}" class="form-control auth-input" autocomplete="tel" placeholder="+44 7700 900123" th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{phone}"></div>
+                            </div>
+                        </div>
+
+                        <div class="auth-section"><span>2</span> Password</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="auth-label" for="password">Password <span class="req">*</span></label>
+                                <input type="password" id="password" th:field="*{password}" class="form-control auth-input" autocomplete="new-password" placeholder="At least 8 characters" th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{password}"></div>
+                                <div class="pw-meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                                <small class="pw-hint" id="pwHint">Use letters and numbers, 8 characters or more.</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="auth-label" for="confirmPassword">Confirm password <span class="req">*</span></label>
+                                <input type="password" id="confirmPassword" th:field="*{confirmPassword}" class="form-control auth-input" autocomplete="new-password" placeholder="Type it again" th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{confirmPassword}"></div>
+                                <small class="pw-hint" id="matchHint"></small>
+                            </div>
+                        </div>
+
+                        <div class="auth-section"><span>3</span> Account recovery</div>
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label class="auth-label" for="securityQuestion">Security question <span class="req">*</span></label>
+                                <select id="securityQuestion" th:field="*{securityQuestion}" class="form-select auth-input" th:classappend="${#fields.hasErrors('securityQuestion')} ? 'is-invalid'">
+                                    <option value="">Choose a question</option>
+                                    <option th:each="q : ${securityQuestions}" th:value="${q}" th:text="${q}"></option>
+                                </select>
+                                <div class="invalid-feedback" th:errors="*{securityQuestion}"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="auth-label" for="securityAnswer">Answer <span class="req">*</span></label>
+                                <input type="text" id="securityAnswer" th:field="*{securityAnswer}" class="form-control auth-input" autocomplete="off" th:classappend="${#fields.hasErrors('securityAnswer')} ? 'is-invalid'">
+                                <div class="invalid-feedback" th:errors="*{securityAnswer}"></div>
+                            </div>
+                        </div>
+                        <small class="pw-hint d-block mt-2">Used to reset your password if you forget it. Answers are not case-sensitive.</small>
+
+                        <!-- Consent -->
+                        <div class="auth-consent mt-4">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="promoAlerts" th:field="*{promoAlerts}">
+                                <label class="form-check-label small" for="promoAlerts">
+                                    Email me deals and coupons that match my travel preferences (optional - you can turn this off any time on your profile)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="acceptPrivacy" th:field="*{acceptPrivacy}"
+                                       th:classappend="${#fields.hasErrors('acceptPrivacy')} ? 'is-invalid'">
+                                <label class="form-check-label small" for="acceptPrivacy">
+                                    I have read the <a th:href="@{/privacy}" target="_blank" rel="noopener">privacy notice</a> and agree to my data being used to manage my bookings <span class="req">*</span>
+                                </label>
+                                <div class="invalid-feedback" th:errors="*{acceptPrivacy}"></div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-luxe-gold w-100 rounded-pill py-3 mt-4 auth-submit">
+                            <span>Create my account</span> <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <p class="text-center small text-muted mt-4 mb-0">
+                        Already have an account? <a th:href="@{/login}" class="auth-link fw-semibold">Log in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    (function () {
+        var pw = document.getElementById('password'), cf = document.getElementById('confirmPassword');
+        var bars = document.querySelectorAll('.pw-meter i'), hint = document.getElementById('pwHint'), match = document.getElementById('matchHint');
+        var labels = ['Too short', 'Weak', 'Good', 'Strong'];
+        function score(v) {
+            if (v.length < 8) return 0;
+            var s = 1;
+            if (/[a-z]/i.test(v) && /\d/.test(v)) s++;
+            if (v.length >= 12 || /[^a-z0-9]/i.test(v)) s++;
+            if (/[a-z]/.test(v) && /[A-Z]/.test(v) && v.length >= 10) s++;
+            return Math.min(s, 4);
+        }
+        function update() {
+            var v = pw.value, s = v ? score(v) : -1;
+            bars.forEach(function (b, i) { b.className = i < s ? 'on s' + s : ''; });
+            hint.textContent = !v ? 'Use letters and numbers, 8 characters or more.'
+                : s === 0 ? 'Too short - use at least 8 characters.'
+                : !(/[a-z]/i.test(v) && /\d/.test(v)) ? 'Add both letters and numbers.'
+                : 'Strength: ' + labels[s - 1];
+            if (cf.value) {
+                var same = cf.value === v;
+                match.textContent = same ? 'Passwords match' : 'Passwords do not match yet';
+                match.className = 'pw-hint ' + (same ? 'text-success' : 'text-danger');
+            } else { match.textContent = ''; }
+        }
+        pw.addEventListener('input', update);
+        cf.addEventListener('input', update);
+        update();
+        document.getElementById('registerForm').addEventListener('submit', function () {
+            var b = this.querySelector('.auth-submit');
+            setTimeout(function () { b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creating your account...'; }, 0);
+        });
+        var firstError = document.querySelector('.is-invalid');
+        if (firstError) firstError.scrollIntoView({ block: 'center' });
+    })();
+</script>
+</body>
+</html>
