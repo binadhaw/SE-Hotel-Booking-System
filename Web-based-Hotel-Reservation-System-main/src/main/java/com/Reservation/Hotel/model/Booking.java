@@ -31,7 +31,7 @@ public class Booking {
     private String groupReference;
 
     private LocalDateTime createdAt;
-    private int guests;            // total = adults + children (kept so older code keeps working)
+    private int guests;            // total = adults + children kept so older code keeps working
     private Integer adults;         // null on bookings made before adults/children were split
     private Integer children;
     private LocalDate checkInDate;
