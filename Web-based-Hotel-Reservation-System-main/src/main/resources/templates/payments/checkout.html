@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Review and pay')}">
+    <title>Review and pay</title>
+</head>
+<body class="page-flow">
+
+<div th:replace="~{fragments/navbar :: navbar('bookings')}"></div>
+
+<main class="app-content container my-4 my-md-5">
+
+    <section class="pay-hero mb-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="flow-rise">
+                <span class="flow-kicker"><i class="bi bi-shield-lock-fill"></i> Protected checkout</span>
+                <h1 class="flow-title mb-1">Review and pay</h1>
+                <p class="mb-0 opacity-75 small">Check your stay, then pay securely on our payment partner's page. You'll come straight back here.</p>
+            </div>
+            <ol class="flow-steps flow-steps-compact" aria-label="Checkout progress">
+                <li class="is-done"><span class="dot"><i class="bi bi-check-lg"></i></span><span class="lbl">Reservation</span></li>
+                <li class="is-active"><span class="dot"><i class="bi bi-credit-card"></i></span><span class="lbl">Payment</span></li>
+                <li><span class="dot"><i class="bi bi-patch-check"></i></span><span class="lbl">Confirmed</span></li>
+            </ol>
+        </div>
+    </section>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="row g-4">
+        <!-- Stay details -->
+        <div class="col-lg-7">
+            <section class="flow-panel reveal">
+                <header class="flow-panel-head">
+                    <span class="flow-num">1</span>
+                    <div><h2>Your stay</h2><p th:text="${#lists.size(bookings) == 1 ? '1 room' : #lists.size(bookings) + ' rooms'}">1 room</p></div>
+                </header>
+                <div th:each="b : ${bookings}" class="review-item">
+                    <img th:if="${b.room.coverImage != null}" th:src="@{${b.room.coverImage}}" alt="">
+                    <div class="flex-grow-1 min-w-0">
+                        <strong class="d-block" th:text="${b.hotel.name}">Hotel</strong>
+                        <small class="text-muted d-block" th:text="${b.room.roomType + ' · Room ' + b.room.roomNumber + ' · ' + b.hotel.location}">Room</small>
+                        <div class="review-dates">
+                            <span><i class="bi bi-box-arrow-in-right"></i> <span th:text="${#temporals.format(b.checkInDate, 'EEE dd MMM yyyy')}"></span></span>
+                            <span><i class="bi bi-box-arrow-right"></i> <span th:text="${#temporals.format(b.checkOutDate, 'EEE dd MMM yyyy')}"></span></span>
+                            <span><i class="bi bi-people"></i> <span th:text="${b.guestSummary}"></span></span>
+                        </div>
+                        <small th:if="${b.appliedDiscount}" class="d-block text-success mt-1"><i class="bi bi-tag"></i> <span th:text="${b.appliedDiscount}"></span></small>
+                        <small th:if="${b.amountPaid > 0}" class="d-block text-muted" th:text="${'Already paid $' + #numbers.formatDecimal(b.amountPaid, 1, 2)}"></small>
+                    </div>
+                    <strong class="review-price" th:text="${'$' + #numbers.formatDecimal(b.amountToPay, 1, 'COMMA', 2, 'POINT')}">$0</strong>
+                </div>
+            </section>
+
+            <section class="flow-panel reveal">
+                <header class="flow-panel-head">
+                    <span class="flow-num">2</span>
+                    <div><h2>How payment works</h2><p>Your card details go to the payment page, not to the hotel</p></div>
+                </header>
+                <ol class="redirect-steps">
+                    <li><span><i class="bi bi-box-arrow-up-right"></i></span><div><strong>Go to AuraPay</strong><small>Our payment partner's secure page opens.</small></div></li>
+                    <li><span><i class="bi bi-credit-card-2-front"></i></span><div><strong>Pay by card</strong><small>Visa, Mastercard or Amex, then confirm with a one-time code.</small></div></li>
+                    <li><span><i class="bi bi-arrow-return-left"></i></span><div><strong>Come back confirmed</strong><small>You return here with your receipt - booking confirmed instantly.</small></div></li>
+                </ol>
+            </section>
+        </div>
+
+        <!-- Pay -->
+        <div class="col-lg-5">
+            <aside class="flow-summary reveal reveal-right">
+                <div class="flow-summary-head">
+                    <i class="bi bi-receipt fs-3"></i>
+                    <div><small>Total to pay</small><strong th:text="${'$' + #numbers.formatDecimal(total, 1, 'COMMA', 2, 'POINT') + ' USD'}">$0.00</strong></div>
+                </div>
+                <div class="flow-summary-body">
+                    <div class="sum-line" th:each="b : ${bookings}">
+                        <span class="text-truncate me-2" th:text="${b.room.roomType + ' · ' + b.nights + (b.nights == 1 ? ' night' : ' nights')}">Room</span>
+                        <span th:text="${'$' + #numbers.formatDecimal(b.amountToPay, 1, 'COMMA', 2, 'POINT')}">$0</span>
+                    </div>
+                    <div class="sum-total"><span>Total</span><strong th:text="${'$' + #numbers.formatDecimal(total, 1, 'COMMA', 2, 'POINT')}">$0.00</strong></div>
+
+                    <div th:if="${attemptsLeft != null and attemptsLeft > 0 and attemptsLeft < 3}" class="pay-warning mt-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Several payments failed recently. <strong th:text="${attemptsLeft + (attemptsLeft == 1 ? ' attempt' : ' attempts') + ' left'}">2 attempts left</strong> before checkout pauses for 15 minutes.</span>
+                    </div>
+
+                    <form th:action="@{/payments/checkout/start}" method="post" id="startForm">
+                        <input type="hidden" name="bookingIds" th:each="b : ${bookings}" th:value="${b.id}">
+                        <button type="submit" class="btn btn-luxe-gold w-100 rounded-pill py-3 mt-3 flow-submit pay-btn" id="startBtn">
+                            <i class="bi bi-lock-fill me-1"></i> Continue to secure payment
+                        </button>
+                    </form>
+                    <div class="aurapay-note">
+                        <span class="aurapay-logo"><i class="bi bi-shield-lock-fill"></i></span>
+                        <small>Payments are handled by <strong>AuraPay</strong>, a demo gateway - no real money moves.</small>
+                    </div>
+                    <a th:href="@{/bookings}" class="btn btn-link w-100 text-muted small mt-1">Pay later from My Bookings</a>
+                </div>
+            </aside>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+<script th:inline="none">
+    document.getElementById('startForm').addEventListener('submit', function () {
+        var b = document.getElementById('startBtn');
+        b.disabled = true;
+        b.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Opening AuraPay...';
+    });
+</script>
+</body>
+</html>

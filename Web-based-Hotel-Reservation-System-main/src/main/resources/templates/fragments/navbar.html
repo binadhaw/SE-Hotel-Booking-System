@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<nav th:fragment="navbar(activePage)" class="luxe-navbar navbar navbar-expand-xl" th:classappend="${activePage == 'home'} ? 'navbar-overlay'">
+    <div class="container">
+        <!-- Brand Logo -->
+        <a class="luxe-brand-logo navbar-brand" th:href="@{/}">
+            <div class="luxe-brand-icon">
+                <i class="bi bi-sunrise"></i>
+            </div>
+            <div class="luxe-brand-text">
+                <span class="luxe-brand-title">AURA GRAND LUXE</span>
+                <span class="luxe-brand-subtitle">Sri Lanka stays</span>
+            </div>
+        </a>
+
+        <!-- Mobile Toggler -->
+        <button class="navbar-toggler border-secondary text-white" type="button" data-bs-toggle="collapse" data-bs-target="#luxeNavbarNav" aria-controls="luxeNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="bi bi-list fs-3 text-white"></i>
+        </button>
+
+        <!-- Navigation Links -->
+        <div class="collapse navbar-collapse" id="luxeNavbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-xl-0 ms-xl-3 gap-1">
+                <!-- Hotels -->
+                <li class="nav-item">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'hotels'} ? 'active' : ''" th:href="@{/hotels}">
+                        <i class="bi bi-building"></i>
+                        <span>Hotels</span>
+                    </a>
+                </li>
+
+                <!-- Bookings -->
+                <li class="nav-item" sec:authorize="hasAnyRole('USER', 'MANAGER', 'ADMIN')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'bookings'} ? 'active' : ''" th:href="@{/bookings}">
+                        <i class="bi bi-calendar-check"></i>
+                        <span sec:authorize="hasRole('MANAGER')">Bookings</span>
+                        <span sec:authorize="hasRole('ADMIN')">Bookings</span>
+                        <span sec:authorize="hasRole('USER')">My Bookings</span>
+                    </a>
+                </li>
+
+                <!-- Promotions & Offers -->
+                <li class="nav-item" sec:authorize="hasAnyRole('USER', 'MANAGER', 'ADMIN')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'promotions'} ? 'active' : ''" th:href="@{/promotions}">
+                        <i class="bi bi-ticket-perforated"></i>
+                        <span>Offers</span>
+                    </a>
+                </li>
+
+                <!-- Inquiries & Support -->
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'inquiries'} ? 'active' : ''" th:href="@{/inquiries}">
+                        <i class="bi bi-chat-left-dots"></i>
+                        <span>Inquiries</span>
+                    </a>
+                </li>
+
+                <!-- Top Agents for Customers -->
+                <li class="nav-item" sec:authorize="hasRole('USER')">
+                    <a class="luxe-nav-link text-warning" th:classappend="${activePage == 'explore'} ? 'active' : ''" th:href="@{/agents/explore}">
+                        <i class="bi bi-star-fill text-warning"></i>
+                        <span>Top Agents</span>
+                    </a>
+                </li>
+
+                <!-- Agent Workspace & Dashboard for Travel Agents -->
+                <li class="nav-item" sec:authorize="hasRole('AGENT')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'portal'} ? 'active' : ''" th:href="@{/agents/portal}">
+                        <i class="bi bi-briefcase"></i>
+                        <span>Agent Portal</span>
+                    </a>
+                </li>
+                <li class="nav-item" sec:authorize="hasRole('AGENT')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'dashboard'} ? 'active' : ''" th:href="@{/agent/dashboard}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Performance</span>
+                    </a>
+                </li>
+
+                <!-- Admin: dashboard -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'admin_dashboard'} ? 'active' : ''" th:href="@{/admin/dashboard}">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+
+                <!-- Admin: user accounts -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="luxe-nav-link" th:classappend="${activePage == 'admin_users'} ? 'active' : ''" th:href="@{/admin/users}">
+                        <i class="bi bi-people"></i>
+                        <span>Users</span>
+                    </a>
+                </li>
+
+                <!-- Admin Approvals -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="luxe-nav-link text-warning" th:classappend="${activePage == 'agent_admin'} ? 'active' : ''" th:href="@{/agents/admin/manage}">
+                        <i class="bi bi-shield-check"></i>
+                        <span>Agents</span>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right Side: User Profile & Actions -->
+            <div class="d-flex align-items-center gap-3 mt-3 mt-xl-0">
+                <!-- Visitors -->
+                <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn btn-outline-light btn-sm rounded-pill px-3">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Log in
+                </a>
+                <a sec:authorize="!isAuthenticated()" th:href="@{/register}" class="btn btn-luxe-gold btn-sm rounded-pill px-3">
+                    <i class="bi bi-person-plus me-1"></i> Sign up
+                </a>
+
+                <!-- Notification bell -->
+                <div class="dropdown" sec:authorize="isAuthenticated()">
+                    <a href="#" class="luxe-bell d-inline-block" data-bs-toggle="dropdown" aria-expanded="false"
+                       th:attr="aria-label=${unreadNotifications + ' unread notifications'}">
+                        <i class="bi bi-bell"></i>
+                        <span class="luxe-bell-count" th:if="${unreadNotifications > 0}"
+                              th:text="${unreadNotifications > 9 ? '9+' : unreadNotifications}">1</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end luxe-notification-menu shadow p-0">
+                        <li class="px-3 py-2 border-bottom d-flex justify-content-between align-items-center">
+                            <strong class="small">Notifications</strong>
+                            <a th:href="@{/notifications}" class="small text-decoration-none">See all</a>
+                        </li>
+                        <li th:each="n : ${notificationPreview}">
+                            <a class="dropdown-item py-2 border-bottom small" th:classappend="${!n.readFlag} ? 'notification-unread'"
+                               th:href="@{/notifications/{id}/open(id=${n.id})}">
+                                <div class="fw-semibold" th:text="${n.title}">Title</div>
+                                <div class="text-muted text-truncate" th:text="${n.message}">Message</div>
+                                <small class="text-muted" th:text="${#temporals.format(n.createdAt, 'dd MMM HH:mm')}"></small>
+                            </a>
+                        </li>
+                        <li th:if="${#lists.isEmpty(notificationPreview)}" class="px-3 py-3 small text-muted">You're all caught up.</li>
+                    </ul>
+                </div>
+
+                <!-- User Profile Chip (links to the profile page) -->
+                <a class="luxe-user-chip text-decoration-none text-white" sec:authorize="isAuthenticated()" th:href="@{/profile}" title="My profile">
+                    <div class="luxe-avatar" th:text="${#strings.toUpperCase(#strings.substring(#authentication.name, 0, 1))}">U</div>
+                    <div class="d-flex flex-column lh-1">
+                        <span class="fw-bold text-truncate d-inline-block" style="max-width: 130px;" th:text="${currentUser != null ? currentUser.fullName : #authentication.name}">User</span>
+                        <span class="small text-white-50" style="font-size: 0.7rem;" th:text="${currentUser != null ? currentUser.roleLabel : ''}">Role</span>
+                    </div>
+                </a>
+
+                <!-- Logout Form -->
+                <form th:action="@{/logout}" method="post" class="m-0" sec:authorize="isAuthenticated()">
+                    <button type="submit" class="btn btn-outline-light btn-sm d-flex align-items-center gap-1 py-1 px-2.5 rounded-pill" title="Logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span class="d-none d-sm-inline">Logout</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>

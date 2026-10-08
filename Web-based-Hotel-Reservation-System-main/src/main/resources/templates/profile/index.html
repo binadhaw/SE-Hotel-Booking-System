@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('My profile')}">
+    <title>My profile</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('profile')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="luxe-avatar" style="width:56px;height:56px;font-size:1.5rem;"
+             th:text="${#strings.toUpperCase(#strings.substring(currentUser.username, 0, 1))}">U</div>
+        <div>
+            <h2 class="h3 fw-bold mb-0" th:text="${currentUser.fullName}">Name</h2>
+            <span class="luxe-role-pill"
+                  th:classappend="${'role-' + #strings.toLowerCase(currentUser.role)}"
+                  th:text="${currentUser.roleLabel}">Tourist</span>
+            <small class="text-muted ms-2">@<span th:text="${currentUser.username}">user</span>
+                &bull; member since <span th:text="${#temporals.format(currentUser.createdAt, 'MMM yyyy')}">2026</span></small>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="row g-4">
+        <!-- Personal details -->
+        <div class="col-lg-7">
+            <div class="luxe-card shadow-sm h-100">
+                <div class="luxe-card-header"><h5 class="fw-bold mb-0"><i class="bi bi-person-lines-fill text-warning me-2"></i>Personal details</h5></div>
+                <div class="luxe-card-body p-4">
+                    <form th:action="@{/profile}" method="post">
+                        <div class="mb-3">
+                            <label class="luxe-form-label" for="fullName">Full name</label>
+                            <input type="text" id="fullName" name="fullName" th:value="${currentUser.fullName}" class="form-control luxe-form-control" required maxlength="100">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label class="luxe-form-label" for="email">Email</label>
+                                <input type="email" id="email" name="email" th:value="${currentUser.email}" class="form-control luxe-form-control" required>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="luxe-form-label" for="phone">Phone</label>
+                                <input type="tel" id="phone" name="phone" th:value="${currentUser.phone}" class="form-control luxe-form-control">
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-4" sec:authorize="hasRole('USER')">
+                            <input class="form-check-input" type="checkbox" role="switch" id="promoAlerts" name="promoAlerts" value="true" th:checked="${currentUser.promoAlerts}">
+                            <label class="form-check-label" for="promoAlerts">Send me promotional discount alerts and coupons</label>
+                        </div>
+                        <input type="hidden" name="promoAlerts" value="false" sec:authorize="!hasRole('USER')">
+                        <button type="submit" class="btn btn-luxe-gold rounded-pill px-4"><i class="bi bi-save me-1"></i> Save changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change password -->
+        <div class="col-lg-5">
+            <div class="luxe-card shadow-sm h-100">
+                <div class="luxe-card-header"><h5 class="fw-bold mb-0"><i class="bi bi-shield-lock text-warning me-2"></i>Change password</h5></div>
+                <div class="luxe-card-body p-4">
+                    <div th:if="${passwordError}" class="alert alert-danger border-0 small" th:text="${passwordError}"></div>
+                    <form th:action="@{/profile/password}" method="post">
+                        <div class="mb-3">
+                            <label class="luxe-form-label" for="currentPassword">Current password</label>
+                            <input type="password" id="currentPassword" name="currentPassword" class="form-control luxe-form-control" required autocomplete="current-password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="luxe-form-label" for="newPassword">New password</label>
+                            <input type="password" id="newPassword" name="newPassword" class="form-control luxe-form-control" required minlength="8" autocomplete="new-password">
+                        </div>
+                        <div class="mb-4">
+                            <label class="luxe-form-label" for="confirmPassword">Confirm new password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-control luxe-form-control" required minlength="8" autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn-luxe-primary rounded-pill px-4"><i class="bi bi-key me-1"></i> Update password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Travel preferences (tourists) -->
+    <div class="luxe-card mt-4" id="preferences" sec:authorize="hasRole('USER')">
+        <div class="luxe-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="fw-bold mb-0"><i class="bi bi-compass text-warning me-2"></i>Travel preferences</h5>
+            <small class="text-muted">Used to tailor offers and the "Recommended for you" section</small>
+        </div>
+        <div class="luxe-card-body p-4">
+            <form th:action="@{/profile/preferences}" method="post">
+                <label class="luxe-form-label mb-2">What do you enjoy?</label>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <th:block th:each="c, st : ${interestOptions}">
+                        <input type="checkbox" class="btn-check" name="interests" th:value="${c}" th:id="${'int' + st.index}"
+                               th:checked="${currentUser.interestList.contains(c)}">
+                        <label class="btn btn-outline-dark btn-sm rounded-pill px-3" th:for="${'int' + st.index}" th:text="${c}">Beach</label>
+                    </th:block>
+                </div>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="luxe-form-label" for="preferredDestination">Preferred destination</label>
+                        <input type="text" id="preferredDestination" name="preferredDestination" class="form-control luxe-form-control"
+                               th:value="${currentUser.preferredDestination}" maxlength="80" placeholder="e.g. Galle" list="prefTowns">
+                        <datalist id="prefTowns">
+                            <option value="Galle"></option><option value="Mirissa"></option><option value="Ella"></option>
+                            <option value="Kandy"></option><option value="Sigiriya"></option><option value="Nuwara Eliya"></option>
+                            <option value="Arugam Bay"></option><option value="Bentota"></option><option value="Colombo"></option>
+                        </datalist>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="luxe-form-label" for="budgetPerNight">Budget per night (USD)</label>
+                        <input type="number" id="budgetPerNight" name="budgetPerNight" class="form-control luxe-form-control"
+                               th:value="${currentUser.budgetPerNight != null ? #numbers.formatDecimal(currentUser.budgetPerNight, 1, 0) : ''}" min="1" max="100000" placeholder="e.g. 150">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-luxe-gold"><i class="bi bi-stars"></i> Save preferences</button>
+            </form>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

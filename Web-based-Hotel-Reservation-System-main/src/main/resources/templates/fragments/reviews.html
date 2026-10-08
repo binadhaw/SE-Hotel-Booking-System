@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- Reviews section of the hotel page. Needs: hotel, reviews, stats, distribution, isOwner -->
+<div th:fragment="reviews" class="luxe-card p-4 mb-4" id="reviews">
+    <h5 class="fw-bold mb-3">Guest reviews</h5>
+
+    <div class="row g-4 align-items-center mb-3" th:if="${stats.reviewCount > 0}">
+        <div class="col-sm-4 text-center">
+            <div class="display-5 fw-bold" th:text="${#numbers.formatDecimal(stats.averageRating, 1, 1)}">4.5</div>
+            <div class="text-warning">
+                <i class="bi" th:each="i : ${#numbers.sequence(1, 5)}"
+                   th:classappend="${stats.averageRating >= i ? 'bi-star-fill' : (stats.averageRating >= i - 0.5 ? 'bi-star-half' : 'bi-star')}"></i>
+            </div>
+            <small class="text-muted" th:text="${stats.reviewCount + (stats.reviewCount == 1 ? ' verified review' : ' verified reviews')}">0 verified reviews</small>
+        </div>
+        <div class="col-sm-8">
+            <div class="d-flex align-items-center gap-2 small" th:each="i : ${#numbers.sequence(0, 4)}">
+                <span style="width: 3.2em;" th:text="${5 - i} + ' star'">5 star</span>
+                <div class="progress flex-grow-1" style="height: 8px;" role="progressbar"
+                     th:attr="aria-valuenow=${distribution[i]},aria-valuemax=${stats.reviewCount}">
+                    <div class="progress-bar bg-warning" th:style="'width:' + ${stats.reviewCount > 0 ? distribution[i] * 100 / stats.reviewCount : 0} + '%'"></div>
+                </div>
+                <span class="text-muted" style="width: 2em;" th:text="${distribution[i]}">0</span>
+            </div>
+        </div>
+    </div>
+
+    <p th:if="${stats.reviewCount == 0}" class="text-muted small mb-0">No reviews yet. Guests can review the hotel after their stay.</p>
+
+    <div th:each="r : ${reviews}" class="border-top pt-3 mt-3" th:classappend="${r.hidden} ? 'opacity-50'">
+        <div class="d-flex justify-content-between flex-wrap gap-2">
+            <div>
+                <span class="text-warning">
+                    <i class="bi" th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${r.rating >= i ? 'bi-star-fill' : 'bi-star'}"></i>
+                </span>
+                <strong class="ms-1" th:text="${r.title}">Great stay</strong>
+                <span th:if="${r.hidden}" class="badge bg-secondary ms-1">Hidden</span>
+            </div>
+            <small class="text-muted">
+                <span th:text="${r.username}">guest</span> &bull;
+                <span th:text="${#temporals.format(r.createdAt, 'dd MMM yyyy')}">date</span>
+            </small>
+        </div>
+        <p class="small text-secondary mb-2 mt-1" th:if="${r.comment}" th:text="${r.comment}" style="white-space: pre-line;"></p>
+
+        <div th:if="${r.managerReply}" class="ms-3 p-2 bg-light border-start border-3 border-warning small rounded-end">
+            <strong><i class="bi bi-reply-fill"></i> Response from the hotel</strong>
+            <span class="text-muted" th:text="${' - ' + #temporals.format(r.repliedAt, 'dd MMM yyyy')}"></span>
+            <div th:text="${r.managerReply}" style="white-space: pre-line;"></div>
+        </div>
+
+        <!-- The guest who wrote it can edit or delete it -->
+        <div th:if="${#authorization.expression('isAuthenticated()') and r.username == #authentication.name and r.editable}" class="d-flex gap-2 mt-1">
+            <a th:href="@{/reviews/{id}/edit(id=${r.id})}" class="btn btn-link btn-sm p-0">Edit my review</a>
+            <form th:action="@{/reviews/{id}/delete(id=${r.id})}" method="post" class="m-0" onsubmit="return confirm('Delete your review?');">
+                <button class="btn btn-link btn-sm text-danger p-0" type="submit">Delete</button>
+            </form>
+        </div>
+
+        <!-- Manager reply (owner only) -->
+        <form th:if="${isOwner}" th:action="@{/reviews/{id}/reply(id=${r.id})}" method="post" class="d-flex gap-2 mt-2">
+            <input type="text" name="reply" class="form-control form-control-sm" maxlength="1000" required
+                   th:placeholder="${r.managerReply == null ? 'Reply publicly to this guest...' : 'Update your reply...'}">
+            <button class="btn btn-sm btn-outline-dark text-nowrap" type="submit"><i class="bi bi-reply"></i> Reply</button>
+        </form>
+
+        <!-- Admin moderation -->
+        <form sec:authorize="hasRole('ADMIN')" th:action="@{/reviews/{id}/visibility(id=${r.id})}" method="post" class="mt-2">
+            <input type="hidden" name="hidden" th:value="${!r.hidden}">
+            <button class="btn btn-sm btn-link text-danger p-0" type="submit" th:text="${r.hidden ? 'Restore review' : 'Hide review'}">Hide</button>
+        </form>
+    </div>
+
+    <!-- Pager (5 reviews per page); keeps the chosen stay dates in the links -->
+    <nav th:if="${reviewPages != null and reviewPages > 1}" class="mt-3" aria-label="Review pages">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
+            <li class="page-item" th:classappend="${reviewPage == 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/hotels/{id}(id=${hotel.id},reviewPage=${reviewPage - 1},checkIn=${checkIn},checkOut=${checkOut},guests=${guests})} + '#reviews'">Previous</a>
+            </li>
+            <li class="page-item" th:each="p : ${#numbers.sequence(1, reviewPages)}" th:classappend="${p == reviewPage} ? 'active'">
+                <a class="page-link" th:href="@{/hotels/{id}(id=${hotel.id},reviewPage=${p},checkIn=${checkIn},checkOut=${checkOut},guests=${guests})} + '#reviews'" th:text="${p}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${reviewPage == reviewPages} ? 'disabled'">
+                <a class="page-link" th:href="@{/hotels/{id}(id=${hotel.id},reviewPage=${reviewPage + 1},checkIn=${checkIn},checkOut=${checkOut},guests=${guests})} + '#reviews'">Next</a>
+            </li>
+        </ul>
+    </nav>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Log in')}">
+    <title>Log in</title>
+</head>
+<body class="page-auth">
+
+<div th:replace="~{fragments/navbar :: navbar('login')}"></div>
+
+<main class="app-content auth-scene">
+    <div class="auth-bg" aria-hidden="true"><span class="glow g1"></span><span class="glow g2"></span></div>
+
+    <div class="container position-relative">
+        <div class="row align-items-center gy-5 gx-lg-5">
+
+            <!-- Story side: greeting, headline and postcards -->
+            <div class="col-lg-7 auth-story">
+                <span class="auth-greet flow-rise">
+                    <span class="si">ආයුබෝවන්</span> <span class="sep"></span> Ayubowan &mdash; welcome back
+                </span>
+                <h1 class="auth-title flow-rise" style="--d: .1s">Your next sunset in <em>Sri Lanka</em> is waiting.</h1>
+                <p class="auth-lead flow-rise" style="--d: .2s">
+                    Pick up where you left off &mdash; your bookings, saved trip plans and member offers are one step away.
+                </p>
+
+                <div class="postcards" aria-hidden="true">
+                    <figure class="postcard pc-1">
+                        <img th:src="@{/images/stays/beach-deck.jpg}" alt="">
+                        <figcaption>Beachfront stays</figcaption>
+                    </figure>
+                    <figure class="postcard pc-2">
+                        <img th:src="@{/images/stays/nine-arch-bridge.jpg}" alt="">
+                        <figcaption>Nine Arch Bridge, Ella</figcaption>
+                        <span class="stamp"><i class="bi bi-train-front"></i><small>Ella</small></span>
+                    </figure>
+                    <figure class="postcard pc-3">
+                        <img th:src="@{/images/stays/coast-aerial.jpg}" alt="">
+                        <figcaption>The south coast</figcaption>
+                    </figure>
+                </div>
+
+                <div class="auth-dest flow-rise" style="--d: .35s">
+                    <span class="lbl">Popular now</span>
+                    <a th:href="@{/hotels(keyword='Ella')}">Ella</a>
+                    <a th:href="@{/hotels(keyword='Galle')}">Galle</a>
+                    <a th:href="@{/hotels(keyword='Mirissa')}">Mirissa</a>
+                    <a th:href="@{/hotels(keyword='Sigiriya')}">Sigiriya</a>
+                    <a th:href="@{/hotels(keyword='Kandy')}">Kandy</a>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="col-lg-5">
+                <div class="auth-card flow-rise" style="--d: .15s">
+                    <div class="auth-card-head">
+                        <span class="auth-badge"><i class="bi bi-person-check"></i></span>
+                        <div>
+                            <h2>Log in</h2>
+                            <p>Good to see you again.</p>
+                        </div>
+                    </div>
+
+                    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+                    <div th:if="${param.error != null and param.error[0] == 'suspended'}" class="auth-alert warn">
+                        <i class="bi bi-slash-circle"></i> This account has been suspended. Please contact the administrator.
+                    </div>
+                    <div th:if="${param.error != null and param.error[0] != 'suspended'}" class="auth-alert error">
+                        <i class="bi bi-exclamation-triangle"></i> Incorrect username or password.
+                    </div>
+                    <div th:if="${param.logout}" class="auth-alert ok">
+                        <i class="bi bi-check-circle"></i> You have been logged out. See you soon!
+                    </div>
+
+                    <form th:action="@{/login}" method="post" id="loginForm">
+                        <label class="auth-label" for="username">Username</label>
+                        <div class="auth-field">
+                            <i class="bi bi-person"></i>
+                            <input type="text" id="username" name="username" required autofocus autocomplete="username" placeholder="Your username">
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-baseline mt-3">
+                            <label class="auth-label" for="password">Password</label>
+                            <a th:href="@{/forgot-password}" class="auth-link small">Forgot password?</a>
+                        </div>
+                        <div class="auth-field">
+                            <i class="bi bi-lock"></i>
+                            <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="Your password">
+                            <button type="button" class="auth-eye" data-toggle-password="password" aria-label="Show password"><i class="bi bi-eye"></i></button>
+                        </div>
+                        <small class="auth-caps" id="capsWarn" hidden><i class="bi bi-capslock"></i> Caps Lock is on</small>
+
+                        <button type="submit" class="btn btn-luxe-gold w-100 rounded-pill py-3 mt-4 auth-submit">
+                            <span>Log in</span> <i class="bi bi-arrow-right"></i>
+                        </button>
+                    </form>
+
+                    <div class="auth-divider"><span>New to Aura Grand Luxe?</span></div>
+                    <a th:href="@{/register}" class="btn btn-luxe-outline w-100 rounded-pill py-2">
+                        <i class="bi bi-person-plus me-1"></i> Create a free account
+                    </a>
+
+                    <ul class="auth-trust">
+                        <li><i class="bi bi-patch-check"></i> Verified hotels</li>
+                        <li><i class="bi bi-lightning-charge"></i> Instant confirmation</li>
+                        <li><i class="bi bi-compass"></i> Local experts</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    (function () {
+        document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = document.getElementById(btn.getAttribute('data-toggle-password'));
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.innerHTML = show ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+                btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                input.focus();
+            });
+        });
+        var pw = document.getElementById('password'), caps = document.getElementById('capsWarn');
+        ['keydown', 'keyup'].forEach(function (ev) {
+            pw.addEventListener(ev, function (e) { if (e.getModifierState) caps.hidden = !e.getModifierState('CapsLock'); });
+        });
+        document.getElementById('loginForm').addEventListener('submit', function () {
+            var b = this.querySelector('.auth-submit');
+            b.disabled = true;
+            b.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Logging in...';
+        });
+    })();
+</script>
+</body>
+</html>

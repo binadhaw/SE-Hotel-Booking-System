@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head(${hotel.name})}">
+    <title>Hotel</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('hotels')}"></div>
+
+<main class="app-content container my-4 my-md-5">
+
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small mb-2">
+            <li class="breadcrumb-item"><a th:href="@{/hotels}" class="text-decoration-none text-muted">Hotels</a></li>
+            <li class="breadcrumb-item active" th:text="${hotel.name}">Hotel</li>
+        </ol>
+    </nav>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- Status banner for staff looking at a hotel that is not live -->
+    <div th:if="${!hotel.approved}" class="alert alert-warning border-0 d-flex gap-2 align-items-center">
+        <i class="bi bi-hourglass-split fs-5"></i>
+        <div>
+            This hotel is <strong th:text="${hotel.status}">PENDING</strong> and not visible to tourists.
+            <span th:if="${hotel.statusNote}" th:text="'Note: ' + ${hotel.statusNote}"></span>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+        <div>
+            <h1 class="h2 fw-bold mb-1" th:text="${hotel.name}">Hotel name</h1>
+            <div class="text-muted d-flex flex-wrap gap-3 align-items-center">
+                <span><i class="bi bi-geo-alt-fill text-danger"></i> <span th:text="${hotel.location}">Location</span></span>
+                <span th:if="${stats != null and stats.reviewCount > 0}">
+                    <i class="bi bi-star-fill text-warning"></i>
+                    <strong th:text="${#numbers.formatDecimal(stats.averageRating, 1, 1)}">4.5</strong>
+                    (<span th:text="${stats.reviewCount + (stats.reviewCount == 1 ? ' review' : ' reviews')}">0 reviews</span>)
+                </span>
+                <span th:if="${!#strings.isEmpty(hotel.contactPhone)}"><i class="bi bi-telephone"></i> <span th:text="${hotel.contactPhone}"></span></span>
+                <span th:if="${!#strings.isEmpty(hotel.contactEmail)}"><i class="bi bi-envelope"></i> <span th:text="${hotel.contactEmail}"></span></span>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a th:if="${canManage}" th:href="@{/hotels/{id}/edit(id=${hotel.id})}" class="btn btn-outline-dark rounded-pill px-3"><i class="bi bi-pencil me-1"></i>Edit hotel</a>
+            <a th:if="${canManage}" th:href="@{/hotels/{id}/rooms(id=${hotel.id})}" class="btn btn-outline-dark rounded-pill px-3"><i class="bi bi-door-open me-1"></i>Room inventory</a>
+            <a th:if="${canManage}" th:href="@{/hotels/{id}/staff(id=${hotel.id})}" class="btn btn-outline-dark rounded-pill px-3"><i class="bi bi-people me-1"></i>Staff</a>
+            <a sec:authorize="hasRole('USER')" th:if="${hotel.approved}" th:href="@{/inquiries/new(hotelId=${hotel.id})}" class="btn btn-outline-primary rounded-pill px-3"><i class="bi bi-chat-left-dots me-1"></i>Ask the hotel</a>
+        </div>
+    </div>
+
+    <!-- GALLERY -->
+    <div th:if="${!#lists.isEmpty(hotel.imagePaths)}" class="luxe-card shadow-sm mb-4 overflow-hidden">
+        <div id="hotelGallery" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item" th:each="p, st : ${hotel.imagePaths}" th:classappend="${st.first} ? 'active'">
+                    <img th:src="@{${p}}" class="d-block w-100" style="height: 400px; object-fit: cover;" alt="Hotel photo">
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#hotelGallery" data-bs-slide="prev" th:if="${#lists.size(hotel.imagePaths) > 1}">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#hotelGallery" data-bs-slide="next" th:if="${#lists.size(hotel.imagePaths) > 1}">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- LEFT: about, rooms, reviews -->
+        <div class="col-lg-8">
+            <div class="luxe-card p-4 mb-4">
+                <h5 class="fw-bold">About this property</h5>
+                <p class="text-secondary mb-3" th:text="${hotel.description != null ? hotel.description : 'No description provided yet.'}"></p>
+                <h6 class="fw-bold mb-2">Facilities</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="amenity-chip" th:each="a : ${hotel.amenityList}">
+                        <i class="bi" th:classappend="${amenityIcons.containsKey(a) ? amenityIcons.get(a) : 'bi-check2-circle'}"></i>
+                        <span th:text="${a}">WiFi</span>
+                    </span>
+                    <span th:if="${#lists.isEmpty(hotel.amenityList)}" class="text-muted small">Standard amenities</span>
+                </div>
+            </div>
+
+            <!-- ROOMS -->
+            <div class="luxe-card p-4 mb-4" id="rooms">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <h5 class="fw-bold mb-0">Rooms &amp; rates</h5>
+                    <small class="text-muted" th:if="${checkIn != null}">
+                        Availability for <strong th:text="${#temporals.format(checkIn, 'dd MMM')}"></strong>
+                        &ndash; <strong th:text="${#temporals.format(checkOut, 'dd MMM yyyy')}"></strong>
+                    </small>
+                </div>
+
+                <!-- Date check (real-time availability) -->
+                <form th:action="@{/hotels/{id}(id=${hotel.id})}" method="get" class="row g-2 align-items-end mb-4 p-3 bg-light rounded-3 border">
+                    <div class="col-sm-4">
+                        <label class="form-label small fw-semibold mb-1">Check-in</label>
+                        <input type="date" name="checkIn" class="form-control" th:value="${checkIn}" th:min="${today}" required>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label small fw-semibold mb-1">Check-out</label>
+                        <input type="date" name="checkOut" class="form-control" th:value="${checkOut}" th:min="${today}" required>
+                    </div>
+                    <div class="col-sm-2">
+                        <label class="form-label small fw-semibold mb-1">Guests</label>
+                        <input type="number" name="guests" min="1" max="40" class="form-control" th:value="${guests != null ? guests : 2}">
+                    </div>
+                    <div class="col-sm-2 d-grid">
+                        <button class="btn btn-dark" type="submit">Check</button>
+                    </div>
+                </form>
+
+                <div th:if="${dateError}" class="alert alert-warning border-0 small" th:text="${dateError}"></div>
+
+                <form th:action="@{/bookings/new/{id}(id=${hotel.id})}" method="get" id="multiRoomForm">
+                    <input type="hidden" name="checkIn" th:if="${checkIn != null}" th:value="${checkIn}">
+                    <input type="hidden" name="checkOut" th:if="${checkOut != null}" th:value="${checkOut}">
+
+                    <div class="row g-3">
+                        <div class="col-md-6" th:each="room : ${rooms}">
+                            <div class="border rounded-3 h-100 overflow-hidden d-flex flex-column"
+                                 th:classappend="${freeRoomIds != null and !freeRoomIds.contains(room.id)} ? 'opacity-50'">
+                                <img th:if="${room.coverImage != null}" th:src="@{${room.coverImage}}" alt="Room photo" style="height:150px;object-fit:cover;">
+                                <div class="p-3 d-flex flex-column flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="fw-bold mb-1" th:text="${room.roomType}">Deluxe</h6>
+                                        <span class="fw-bold">$<span th:text="${#numbers.formatDecimal(room.price, 1, 2)}">100</span><small class="text-muted fw-normal">/night</small></span>
+                                    </div>
+                                    <small class="text-muted mb-2">
+                                        Room <span th:text="${room.roomNumber}">101</span> &bull;
+                                        <i class="bi bi-people"></i> sleeps <span th:text="${room.maxGuests}">2</span> &bull;
+                                        <span th:text="${room.bedSummary}">1 King bed</span>
+                                    </small>
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <span th:if="${freeRoomIds != null}"
+                                              class="luxe-pill" th:classappend="${freeRoomIds.contains(room.id)} ? 'pill-approved' : 'pill-cancelled'"
+                                              th:text="${freeRoomIds.contains(room.id)} ? 'Available' : 'Booked'">Available</span>
+                                        <span th:if="${freeRoomIds == null}" class="small text-muted">Pick dates to check availability</span>
+
+                                        <span sec:authorize="hasAnyRole('USER', 'AGENT')">
+                                            <label class="form-check-label small d-flex align-items-center gap-1"
+                                                   th:if="${freeRoomIds == null or freeRoomIds.contains(room.id)}">
+                                                <input type="checkbox" class="form-check-input room-pick" name="roomIds" th:value="${room.id}"
+                                                       th:attr="data-price=${room.price},data-guests=${room.maxGuests}">
+                                                Select
+                                            </label>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 text-center text-muted py-4" th:if="${#lists.isEmpty(rooms)}">
+                            <i class="bi bi-door-closed fs-2 d-block mb-2"></i>No rooms are listed for this hotel yet.
+                        </div>
+                    </div>
+
+                    <div sec:authorize="hasAnyRole('USER', 'AGENT')" th:if="${hotel.approved and !#lists.isEmpty(rooms)}"
+                         class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-4 pt-3 border-top">
+                        <small class="text-muted" id="pickSummary">Select one or more rooms (several rooms for families or groups).</small>
+                        <button type="submit" class="btn btn-luxe-gold rounded-pill px-4" id="reserveBtn" disabled>
+                            <i class="bi bi-calendar-check me-1"></i> Reserve selected rooms
+                        </button>
+                    </div>
+                    <div sec:authorize="!isAuthenticated()" class="mt-4 pt-3 border-top text-center">
+                        <a th:href="@{/login}" class="btn btn-luxe-gold rounded-pill px-4"><i class="bi bi-box-arrow-in-right me-1"></i> Log in to reserve</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- REVIEWS (Phase 4) -->
+            <th:block th:if="${reviews != null}"><div th:replace="~{fragments/reviews :: reviews}"></div></th:block>
+        </div>
+
+        <!-- RIGHT: summary + nearby -->
+        <div class="col-lg-4">
+            <div class="luxe-card p-4 mb-4">
+                <small class="text-muted text-uppercase fw-bold">Prices from</small>
+                <div class="display-6 fw-bold" th:text="${hotel.fromPrice != null ? '$' + #numbers.formatDecimal(hotel.fromPrice, 1, 2) : '—'}">$100</div>
+                <small class="text-muted">per night, before discounts</small>
+                <hr>
+                <div class="small text-muted">
+                    <div><i class="bi bi-door-open me-1"></i><span th:text="${#lists.size(rooms)}">0</span> room(s) listed</div>
+                    <div><i class="bi bi-person-badge me-1"></i>Managed by <span th:text="${managerName}">manager</span></div>
+                </div>
+            </div>
+
+            <!-- ATTRACTIONS (Phase 5) -->
+            <th:block th:if="${attractions != null}"><div th:replace="~{fragments/attractions :: nearby}"></div></th:block>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    (function () {
+        var boxes = document.querySelectorAll('.room-pick');
+        var btn = document.getElementById('reserveBtn');
+        var summary = document.getElementById('pickSummary');
+        if (!btn) return;
+        function update() {
+            var n = 0, beds = 0, price = 0;
+            boxes.forEach(function (b) {
+                if (b.checked) {
+                    n++;
+                    beds += parseInt(b.getAttribute('data-guests'), 10) || 0;
+                    price += parseFloat(b.getAttribute('data-price')) || 0;
+                }
+            });
+            btn.disabled = n === 0;
+            summary.textContent = n === 0
+                ? 'Select one or more rooms (several rooms for families or groups).'
+                : n + ' room(s) selected - sleeps up to ' + beds + ' - $' + price.toFixed(2) + ' per night';
+        }
+        boxes.forEach(function (b) { b.addEventListener('change', update); });
+        update();
+    })();
+</script>
+</body>
+</html>

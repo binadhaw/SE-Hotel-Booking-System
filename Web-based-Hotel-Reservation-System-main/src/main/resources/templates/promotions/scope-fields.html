@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<body>
+
+<!-- Where the offer applies, its terms and (for coupons) the expiry date. Used inside th:object="${promotion}". -->
+<div th:fragment="scope(showExpiry)" class="mb-4 p-4 bg-light rounded-3 border">
+    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-building text-primary me-1"></i> Where &amp; when it applies</h6>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="luxe-form-label" for="hotelId">Hotel <span class="text-danger" sec:authorize="hasRole('MANAGER')">*</span></label>
+            <select id="hotelId" name="hotelId" class="form-select luxe-form-control" th:required="${!isAdmin}">
+                <option value="" th:if="${isAdmin}">All hotels (platform-wide offer)</option>
+                <option value="" th:unless="${isAdmin}" disabled th:selected="${promotion.hotel == null}">Choose one of your hotels</option>
+                <option th:each="h : ${scopeHotels}" th:value="${h.id}" th:text="${h.name}"
+                        th:selected="${promotion.hotel != null and promotion.hotel.id == h.id}"></option>
+            </select>
+            <div class="form-text" th:if="${!isAdmin and #lists.isEmpty(scopeHotels)}">You need an approved hotel before creating offers.</div>
+        </div>
+        <div class="col-md-6" th:if="${showExpiry}">
+            <label class="luxe-form-label" for="validUntil">Expires on</label>
+            <input type="datetime-local" id="validUntil" th:field="*{validUntil}" class="form-control luxe-form-control" />
+            <div class="form-text">Shown on the coupon and in the coupon email. Leave empty for no expiry.</div>
+        </div>
+        <div class="col-12">
+            <label class="luxe-form-label" for="terms">Terms &amp; conditions</label>
+            <textarea id="terms" th:field="*{terms}" rows="2" maxlength="500" class="form-control luxe-form-control"
+                      placeholder="e.g. Valid for stays of 2+ nights. Not combinable with other offers."></textarea>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Reserve rooms')}">
+    <title>Reserve rooms</title>
+</head>
+<body class="page-flow">
+
+<div th:replace="~{fragments/navbar :: navbar('bookings')}"></div>
+
+<main class="app-content container my-4 my-md-5">
+
+    <!-- HERO: hotel story on the left, photos at their natural size on the right (never stretched) -->
+    <section class="stay-hero" th:with="imgs=${hotel.imagePaths}">
+        <div class="stay-hero-text">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb flow-crumbs mb-3 small">
+                    <li class="breadcrumb-item"><a th:href="@{/hotels}">Hotels</a></li>
+                    <li class="breadcrumb-item"><a th:href="@{/hotels/{id}(id=${hotel.id})}" th:text="${hotel.name}">Hotel</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Reservation</li>
+                </ol>
+            </nav>
+            <span class="flow-kicker flow-rise"><i class="bi bi-stars"></i> Reserve your stay</span>
+            <h1 class="flow-title flow-rise" style="--d: .08s" th:text="${hotel.name}">Hotel</h1>
+            <div class="flow-sub flow-rise" style="--d: .14s"><i class="bi bi-geo-alt-fill"></i> <span th:text="${hotel.location}">Location</span>, Sri Lanka</div>
+            <div class="stay-amenities flow-rise" style="--d: .2s" th:if="${!#lists.isEmpty(hotel.amenityList)}">
+                <span th:each="a, st : ${hotel.amenityList}" th:if="${st.index < 5}"><i class="bi bi-check2"></i> <span th:text="${a}">WiFi</span></span>
+                <span th:if="${#lists.size(hotel.amenityList) > 5}" class="more" th:text="${'+' + (#lists.size(hotel.amenityList) - 5) + ' more'}">+2 more</span>
+            </div>
+            <a th:href="@{/hotels/{id}(id=${hotel.id})}" class="stay-back flow-rise" style="--d: .26s"><i class="bi bi-arrow-left"></i> Back to hotel</a>
+        </div>
+        <div class="stay-hero-media" th:if="${imgs != null and !#lists.isEmpty(imgs)}">
+            <figure class="stay-photo main"><img th:src="@{${imgs[0]}}" th:alt="${hotel.name}"></figure>
+            <figure class="stay-photo side s1" th:if="${#lists.size(imgs) > 1}"><img th:src="@{${imgs[1]}}" alt=""></figure>
+            <figure class="stay-photo side s2" th:if="${#lists.size(imgs) > 2}"><img th:src="@{${imgs[2]}}" alt=""></figure>
+            <span class="stay-photo-count" th:if="${#lists.size(imgs) > 3}"><i class="bi bi-images"></i> <span th:text="${#lists.size(imgs) + ' photos'}">5 photos</span></span>
+        </div>
+    </section>
+
+    <!-- Progress tracker -->
+    <div class="steps-bar">
+        <ol class="flow-steps light" id="flowSteps" aria-label="Reservation progress">
+            <li class="is-active" data-step="1"><span class="dot"><i class="bi bi-calendar-check"></i></span><span class="lbl">Your stay</span></li>
+            <li data-step="2"><span class="dot"><i class="bi bi-door-open"></i></span><span class="lbl">Rooms</span></li>
+            <li data-step="3"><span class="dot"><i class="bi bi-ticket-perforated"></i></span><span class="lbl">Offers</span></li>
+            <li data-step="4"><span class="dot"><i class="bi bi-shield-lock"></i></span><span class="lbl">Payment</span></li>
+        </ol>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div th:if="${#lists.isEmpty(rooms)}" class="luxe-card p-5 text-center flow-empty">
+        <div class="flow-empty-icon"><i class="bi bi-door-closed"></i></div>
+        <h4 class="fw-bold mt-3">No rooms available</h4>
+        <p class="text-muted">This property has no bookable rooms right now.</p>
+        <a th:href="@{/hotels}" class="btn btn-luxe-gold rounded-pill px-4 mt-2">Browse other hotels</a>
+    </div>
+
+    <form th:unless="${#lists.isEmpty(rooms)}" th:action="@{/bookings}" method="post" enctype="multipart/form-data" id="bookingForm" novalidate>
+        <input type="hidden" name="hotelId" th:value="${hotel.id}" />
+
+        <div class="row g-4">
+            <!-- ============ LEFT: the four steps ============ -->
+            <div class="col-lg-8">
+
+                <!-- 1. Stay -->
+                <section class="flow-panel reveal" id="step1">
+                    <header class="flow-panel-head">
+                        <span class="flow-num">1</span>
+                        <div><h2>Your stay</h2><p>Choose your nights and who's travelling</p></div>
+                    </header>
+
+                    <!-- Range calendar: replaces the two native date inputs (which allowed impossible stays) -->
+                    <div class="range-picker" id="rangePicker">
+                        <input type="hidden" id="checkInDate" name="checkInDate" th:value="${checkIn}" th:attr="data-min=${today}" />
+                        <input type="hidden" id="checkOutDate" name="checkOutDate" th:value="${checkOut}" />
+                        <div class="date-range" id="dateRange">
+                            <button type="button" class="date-cell" data-edit="in" aria-haspopup="dialog">
+                                <span class="date-cap"><i class="bi bi-box-arrow-in-right"></i> Check-in</span>
+                                <strong id="inLabel">Add date</strong>
+                                <small id="inSub">&nbsp;</small>
+                            </button>
+                            <div class="date-nights" aria-live="polite">
+                                <span class="moon"><i class="bi bi-moon-stars-fill"></i></span>
+                                <strong id="nightsBadge">1</strong>
+                                <small id="nightsWord">night</small>
+                            </div>
+                            <button type="button" class="date-cell" data-edit="out" aria-haspopup="dialog">
+                                <span class="date-cap"><i class="bi bi-box-arrow-right"></i> Check-out</span>
+                                <strong id="outLabel">Add date</strong>
+                                <small id="outSub">&nbsp;</small>
+                            </button>
+                        </div>
+
+                        <div class="rp-pop" id="rpPop" role="dialog" aria-label="Choose your dates" hidden>
+                            <div class="rp-head">
+                                <button type="button" class="rp-nav" id="rpPrev" aria-label="Previous month"><i class="bi bi-chevron-left"></i></button>
+                                <span class="rp-hint" id="rpHint">Select your check-in date</span>
+                                <button type="button" class="rp-nav" id="rpNext" aria-label="Next month"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                            <div class="rp-months" id="rpMonths"></div>
+                            <div class="rp-foot">
+                                <div class="rp-quick">
+                                    <button type="button" data-quick="tonight">Tonight</button>
+                                    <button type="button" data-quick="weekend">This weekend</button>
+                                    <button type="button" data-quick="week">One week</button>
+                                </div>
+                                <button type="button" class="btn btn-dark btn-sm rounded-pill px-3" id="rpDone">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flow-field-error" id="dateError" role="alert"></div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-sm-6">
+                            <div class="guest-stepper">
+                                <div><strong>Adults</strong><small>Age 13+</small></div>
+                                <div class="stepper">
+                                    <button type="button" class="step-btn" data-target="adultsInput" data-delta="-1" aria-label="One adult fewer"><i class="bi bi-dash-lg"></i></button>
+                                    <input id="adultsInput" type="number" name="adults" min="1" max="40" value="2" required aria-label="Adults" />
+                                    <button type="button" class="step-btn" data-target="adultsInput" data-delta="1" aria-label="One more adult"><i class="bi bi-plus-lg"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="guest-stepper">
+                                <div><strong>Children</strong><small>Age 0-12</small></div>
+                                <div class="stepper">
+                                    <button type="button" class="step-btn" data-target="childrenInput" data-delta="-1" aria-label="One child fewer"><i class="bi bi-dash-lg"></i></button>
+                                    <input id="childrenInput" type="number" name="children" min="0" max="40" value="0" required aria-label="Children" />
+                                    <button type="button" class="step-btn" data-target="childrenInput" data-delta="1" aria-label="One more child"><i class="bi bi-plus-lg"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flow-hint mt-3" id="capacityNote" hidden></div>
+                </section>
+
+                <!-- 2. Rooms -->
+                <section class="flow-panel reveal" id="step2">
+                    <header class="flow-panel-head">
+                        <span class="flow-num">2</span>
+                        <div><h2>Rooms</h2><p>Pick one, or several for a family or group</p></div>
+                        <span class="avail-chip ms-auto" id="availChip"><i class="bi bi-broadcast"></i> <span>Live availability</span></span>
+                    </header>
+
+                    <div class="room-grid">
+                        <label class="room-tile" th:each="r, st : ${rooms}"
+                               th:classappend="${freeRoomIds != null and !freeRoomIds.contains(r.id)} ? 'is-booked'"
+                               th:style="${'--i:' + st.index}">
+                            <input type="checkbox" class="room-pick" name="roomIds" th:value="${r.id}"
+                                   th:checked="${selectedRoomIds.contains(r.id) and (freeRoomIds == null or freeRoomIds.contains(r.id))}"
+                                   th:disabled="${freeRoomIds != null and !freeRoomIds.contains(r.id)}"
+                                   th:attr="data-price=${r.price},data-guests=${r.maxGuests},data-name=${r.roomType + ' · Room ' + r.roomNumber}">
+                            <span class="room-media">
+                                <img th:if="${r.coverImage != null}" th:src="@{${r.coverImage}}" alt="" loading="lazy">
+                                <span th:unless="${r.coverImage != null}" class="room-noimg"><i class="bi bi-image"></i></span>
+                                <span class="room-price">$<span th:text="${#numbers.formatDecimal(r.price, 1, 2)}">100</span><small>/night</small></span>
+                                <span class="room-check"><i class="bi bi-check-lg"></i></span>
+                                <span class="room-booked">Booked for these dates</span>
+                            </span>
+                            <span class="room-body">
+                                <strong th:text="${r.roomType}">Deluxe</strong>
+                                <span class="room-meta">
+                                    <span><i class="bi bi-hash"></i><span th:text="${r.roomNumber}">101</span></span>
+                                    <span><i class="bi bi-people"></i>Sleeps <span th:text="${r.maxGuests}">2</span></span>
+                                    <span th:if="${r.bedSummary}"><i class="bi bi-moon"></i><span th:text="${r.bedSummary}">bed</span></span>
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="flow-field-error" id="roomError" role="alert"></div>
+                </section>
+
+                <!-- 3. Offers -->
+                <section class="flow-panel reveal" id="step3">
+                    <header class="flow-panel-head">
+                        <span class="flow-num">3</span>
+                        <div><h2>Offers <small class="text-muted fw-normal fs-6">(optional)</small></h2><p>The better saving is applied automatically</p></div>
+                    </header>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="ticket">
+                                <label for="promoCode" class="ticket-cap"><i class="bi bi-ticket-perforated"></i> Coupon code</label>
+                                <div class="ticket-row">
+                                    <input id="promoCode" type="text" name="promoCode" placeholder="e.g. SAVE10" maxlength="40" autocomplete="off" />
+                                    <button class="btn btn-dark btn-sm rounded-pill px-3" type="button" id="applyCoupon">Apply</button>
+                                </div>
+                                <div id="couponMsg" class="small mt-1" aria-live="polite"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="ticket">
+                                <label for="discountSelect" class="ticket-cap"><i class="bi bi-percent"></i> Standard discount</label>
+                                <select id="discountSelect" name="discountId" class="form-select border-0 bg-transparent px-0 shadow-none fw-semibold">
+                                    <option value="" data-percent="0">No standard discount</option>
+                                    <option th:each="d : ${activeDiscounts}" th:value="${d.id}" th:attr="data-percent=${d.discountPercentage}"
+                                            th:text="${(d.description != null ? d.description : 'Standard Discount') + ' - ' + d.discountPercentage + '% OFF'}"></option>
+                                </select>
+                                <small class="text-muted">Coupons and discounts are never combined.</small>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Payment method -->
+                <section class="flow-panel reveal" id="step4">
+                    <header class="flow-panel-head">
+                        <span class="flow-num">4</span>
+                        <div><h2>Payment</h2><p>How would you like to pay?</p></div>
+                    </header>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="paymentMethod" value="CARD" id="payCard" checked>
+                            <label class="pay-option" for="payCard">
+                                <span class="pay-option-icon"><i class="bi bi-credit-card-2-front"></i></span>
+                                <span>
+                                    <strong>Pay online by card</strong>
+                                    <span class="pay-option-tag">Instant confirmation</span>
+                                    <small>Visa, Mastercard or Amex - secure checkout.</small>
+                                </span>
+                            </label>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="radio" class="btn-check" name="paymentMethod" value="BANK_TRANSFER" id="payBank">
+                            <label class="pay-option" for="payBank">
+                                <span class="pay-option-icon"><i class="bi bi-bank"></i></span>
+                                <span>
+                                    <strong>Bank transfer</strong>
+                                    <small>Upload your bank slip; the hotel confirms it when approving.</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="bankFields" class="flow-collapse mt-3" hidden>
+                        <label class="luxe-form-label" for="receiptFile">Payment receipt or bank slip <span class="text-muted fw-normal small">(optional)</span></label>
+                        <input type="file" id="receiptFile" name="receiptFile" class="form-control luxe-form-control" accept=".jpg,.jpeg,.png,.webp,.pdf" />
+                        <div class="form-text">JPG, PNG, WEBP or PDF up to 5 MB.</div>
+                        <div class="flow-field-error" id="fileError" role="alert"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- ============ RIGHT: live summary ============ -->
+            <div class="col-lg-4">
+                <aside class="flow-summary reveal reveal-right">
+                    <div class="flow-summary-head">
+                        <img th:if="${hotel.coverImage != null}" th:src="@{${hotel.coverImage}}" alt="">
+                        <div>
+                            <small>Your reservation</small>
+                            <strong th:text="${hotel.name}">Hotel</strong>
+                        </div>
+                    </div>
+                    <div class="flow-summary-body">
+                        <div class="sum-dates">
+                            <div><small>Check-in</small><strong id="sIn">-</strong></div>
+                            <i class="bi bi-arrow-right"></i>
+                            <div class="text-end"><small>Check-out</small><strong id="sOut">-</strong></div>
+                        </div>
+                        <div class="sum-guests"><i class="bi bi-people"></i> <span id="sGuests">2 adults</span></div>
+
+                        <ul class="sum-rooms" id="sRoomList"><li class="sum-empty">No room selected yet</li></ul>
+
+                        <div class="sum-line"><span><span id="sNights">0</span> night(s) &times; <span id="sPerNight">$0.00</span></span><span id="sSubtotal">$0.00</span></div>
+                        <div class="sum-line text-success" id="sDiscountRow" hidden><span id="sDiscountLabel">Discount</span><span id="sDiscount">-$0.00</span></div>
+                        <div class="sum-total"><span>Total</span><strong id="sTotal">$0.00</strong></div>
+
+                        <button type="submit" class="btn btn-luxe-gold w-100 rounded-pill py-3 mt-3 flow-submit" id="submitBtn">
+                            <i class="bi bi-lock-fill me-1"></i> <span id="submitLabel">Continue to secure payment</span>
+                        </button>
+                        <a th:href="@{/hotels/{id}(id=${hotel.id})}" class="btn btn-link w-100 text-muted small mt-1">Cancel</a>
+                        <ul class="sum-perks">
+                            <li><i class="bi bi-shield-check"></i> Room locked the moment you pay - never double-booked</li>
+                            <li><i class="bi bi-envelope-check"></i> Confirmation emailed instantly</li>
+                            <li><i class="bi bi-arrow-counterclockwise"></i> Cancel from My Bookings</li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </form>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+    var HOTEL_ID = /*[[${hotel.id}]]*/ 0;
+    var COUPON_URL = /*[[@{/promotions/check-coupon}]]*/ '/promotions/check-coupon';
+    var AVAIL_URL = /*[[@{/bookings/new/{id}/availability(id=${hotel.id})}]]*/ '/bookings/new/1/availability';
+</script>
+<script th:inline="none">
+    (function () {
+        var form = document.getElementById('bookingForm');
+        if (!form) return;
+        function $(id) { return document.getElementById(id); }
+        var picks = Array.prototype.slice.call(document.querySelectorAll('.room-pick'));
+        var checkIn = $('checkInDate'), checkOut = $('checkOutDate');
+        var adults = $('adultsInput'), children = $('childrenInput');
+        var promo = $('promoCode'), discount = $('discountSelect'), couponMsg = $('couponMsg');
+        var couponRate = 0, datesValid = true, shownTotal = 0;
+        var MAX_NIGHTS = 30, DAY = 86400000;
+
+        function money(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+        function num(el) { var n = parseInt(el.value, 10); return isNaN(n) || n < 0 ? 0 : n; }
+        function parse(v) { var p = v.split('-'); return p.length === 3 ? new Date(+p[0], p[1] - 1, +p[2]) : null; }
+        function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        function pretty(v) { var d = v && parse(v); return d ? d.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; }
+        function nightsBetween() {
+            var a = parse(checkIn.value), b = parse(checkOut.value);
+            return a && b ? Math.round((b - a) / DAY) : 0;
+        }
+
+        // Count the total up/down smoothly
+        var totalFrame = 0, totalDone = 0;
+        function animateTotal(to) {
+            var el = $('sTotal'), from = shownTotal, start = null;
+            shownTotal = to;
+            cancelAnimationFrame(totalFrame);
+            clearTimeout(totalDone);
+            // Always land on the exact value, even if the tab is in the background and frames are paused
+            totalDone = setTimeout(function () { cancelAnimationFrame(totalFrame); el.textContent = money(to); }, 500);
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = money(to); return; }
+            el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+            function step(t) {
+                if (!start) start = t;
+                var k = Math.min(1, (t - start) / 450), e = 1 - Math.pow(1 - k, 3);
+                el.textContent = money(from + (to - from) * e);
+                if (k < 1) totalFrame = requestAnimationFrame(step);
+            }
+            totalFrame = requestAnimationFrame(step);
+        }
+
+        // ---------- dates: range calendar ----------
+        var TODAY = parse(checkIn.getAttribute('data-min'));
+        var LAST_CHECKIN = new Date(TODAY.getFullYear() + 1, TODAY.getMonth(), TODAY.getDate());
+        var pop = $('rpPop'), monthsEl = $('rpMonths'), hintEl = $('rpHint');
+        var picking = 'in', hoverDay = null;
+        var view = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+        var WEEK = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+        function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+        function same(a, b) { return !!(a && b && a.getTime() === b.getTime()); }
+        function getIn() { return checkIn.value ? parse(checkIn.value) : null; }
+        function getOut() { return checkOut.value ? parse(checkOut.value) : null; }
+        function longDate(d) { return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        function weekday(d) { return d.toLocaleDateString('en-GB', { weekday: 'long' }); }
+
+        function validateDates() {
+            var msg = '', a = getIn(), b = getOut();
+            if (!a || !b) msg = 'Choose both check-in and check-out dates.';
+            else if (a < TODAY) msg = 'Check-in cannot be in the past.';
+            else if (b <= a) msg = 'Check-out must be at least one night after check-in.';
+            else if (nightsBetween() > MAX_NIGHTS) msg = 'A single booking can be for at most ' + MAX_NIGHTS + ' nights.';
+            $('dateError').textContent = msg;
+            $('dateRange').classList.toggle('is-invalid', !!msg);
+            datesValid = !msg;
+            return datesValid;
+        }
+
+        function paintFields() {
+            var a = getIn(), b = getOut();
+            $('inLabel').textContent = a ? longDate(a) : 'Add date';
+            $('inSub').textContent = a ? weekday(a) : 'Select a date';
+            $('outLabel').textContent = b ? longDate(b) : 'Add date';
+            $('outSub').textContent = b ? weekday(b) : 'Select a date';
+            if (!b) { $('nightsBadge').textContent = '–'; $('nightsWord').textContent = 'nights'; }
+            document.querySelectorAll('.date-cell').forEach(function (c) {
+                c.classList.toggle('is-editing', !pop.hidden && c.getAttribute('data-edit') === picking);
+            });
+        }
+
+        function setRange(a, b) {
+            checkIn.value = a ? iso(a) : '';
+            checkOut.value = b ? iso(b) : '';
+            paintFields();
+            onDatesChanged();
+        }
+
+        function renderMonth(first) {
+            var wrap = document.createElement('div');
+            wrap.className = 'rp-month';
+            var title = document.createElement('div');
+            title.className = 'rp-title';
+            title.textContent = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+            wrap.appendChild(title);
+            var grid = document.createElement('div');
+            grid.className = 'rp-grid';
+            WEEK.forEach(function (w) { var h = document.createElement('span'); h.className = 'rp-dow'; h.textContent = w; grid.appendChild(h); });
+            var offset = (first.getDay() + 6) % 7;                    // Monday first
+            for (var i = 0; i < offset; i++) grid.appendChild(document.createElement('span'));
+            var a = getIn(), b = getOut();
+            var end = picking === 'out' && a && !b && hoverDay && hoverDay > a ? hoverDay : b;
+            var days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+            for (var d = 1; d <= days; d++) {
+                var day = new Date(first.getFullYear(), first.getMonth(), d);
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'rp-day';
+                btn.textContent = d;
+                btn.setAttribute('data-date', iso(day));
+                btn.setAttribute('aria-label', longDate(day));
+                var disabled = day < TODAY || day > addDays(LAST_CHECKIN, MAX_NIGHTS)
+                    || (picking === 'in' && day > LAST_CHECKIN)
+                    || (picking === 'out' && a && day > addDays(a, MAX_NIGHTS));
+                if (disabled) btn.disabled = true;
+                if (same(day, TODAY)) btn.classList.add('is-today');
+                if (same(day, a)) btn.classList.add('is-start');
+                if (same(day, end)) btn.classList.add('is-end');
+                if (a && end && day > a && day < end) btn.classList.add('in-range');
+                grid.appendChild(btn);
+            }
+            wrap.appendChild(grid);
+            return wrap;
+        }
+
+        function render() {
+            monthsEl.innerHTML = '';
+            var count = window.innerWidth < 768 ? 1 : 2;
+            for (var m = 0; m < count; m++) monthsEl.appendChild(renderMonth(new Date(view.getFullYear(), view.getMonth() + m, 1)));
+            $('rpPrev').disabled = view <= new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+            $('rpNext').disabled = new Date(view.getFullYear(), view.getMonth() + count, 1) > addDays(LAST_CHECKIN, MAX_NIGHTS);
+            hintEl.textContent = picking === 'in' ? 'Select your check-in date'
+                : 'Now select your check-out date (up to ' + MAX_NIGHTS + ' nights)';
+            paintFields();
+        }
+
+        function openPicker(which) {
+            picking = which === 'out' && getIn() ? 'out' : 'in';
+            var focus = (picking === 'out' ? getOut() : getIn()) || getIn() || TODAY;
+            view = new Date(focus.getFullYear(), focus.getMonth(), 1);
+            pop.hidden = false;
+            render();
+        }
+        function closePicker() {
+            if (pop.hidden) return;
+            pop.hidden = true;
+            hoverDay = null;
+            // Never leave a half-chosen stay: default to one night
+            var a = getIn();
+            if (a && !getOut()) setRange(a, addDays(a, 1));
+            paintFields();
+        }
+
+        monthsEl.addEventListener('click', function (e) {
+            var btn = e.target.closest('.rp-day');
+            if (!btn || btn.disabled) return;
+            e.stopPropagation();
+            var day = parse(btn.getAttribute('data-date')), a = getIn();
+            if (picking === 'in' || !a || day <= a) {
+                // New check-in: keep the old check-out only if it still makes a valid stay
+                var b = getOut();
+                var keep = picking === 'in' && b && b > day && Math.round((b - day) / DAY) <= MAX_NIGHTS;
+                checkIn.value = iso(day);
+                checkOut.value = keep ? iso(b) : '';
+                picking = 'out';
+                hoverDay = null;
+                render();
+                if (keep) onDatesChanged();
+                return;
+            }
+            setRange(a, day);
+            render();
+            setTimeout(closePicker, 180);
+        });
+        monthsEl.addEventListener('mouseover', function (e) {
+            var btn = e.target.closest('.rp-day');
+            if (picking !== 'out' || !btn || btn.disabled || getOut()) return;
+            var d = parse(btn.getAttribute('data-date'));
+            if (!same(d, hoverDay)) { hoverDay = d; render(); }
+        });
+        $('rpPrev').addEventListener('click', function (e) { e.stopPropagation(); view = new Date(view.getFullYear(), view.getMonth() - 1, 1); render(); });
+        $('rpNext').addEventListener('click', function (e) { e.stopPropagation(); view = new Date(view.getFullYear(), view.getMonth() + 1, 1); render(); });
+        $('rpDone').addEventListener('click', closePicker);
+        document.querySelectorAll('.date-cell').forEach(function (c) {
+            c.addEventListener('click', function (e) { e.stopPropagation(); openPicker(c.getAttribute('data-edit')); });
+        });
+        document.querySelectorAll('[data-quick]').forEach(function (q) {
+            q.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var kind = q.getAttribute('data-quick'), a, b;
+                if (kind === 'tonight') { a = TODAY; b = addDays(TODAY, 1); }
+                else if (kind === 'weekend') { a = addDays(TODAY, (5 - TODAY.getDay() + 7) % 7); b = addDays(a, 2); }   // next Friday -> Sunday
+                else { a = getIn() || TODAY; b = addDays(a, 7); }
+                view = new Date(a.getFullYear(), a.getMonth(), 1);
+                picking = 'in';
+                setRange(a, b);
+                render();
+                setTimeout(closePicker, 220);
+            });
+        });
+        document.addEventListener('click', function (e) { if (!pop.hidden && !$('rangePicker').contains(e.target)) closePicker(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); });
+        window.addEventListener('resize', function () { if (!pop.hidden) render(); });
+
+        var availTimer, availReq = 0;
+        function onDatesChanged() {
+            var ok = validateDates();
+            recalc();
+            if (!ok) { setChip('warn', 'Fix the dates to check availability'); return; }
+            clearTimeout(availTimer);
+            availTimer = setTimeout(fetchAvailability, 250);
+        }
+        function setChip(state, text) {
+            var chip = $('availChip');
+            chip.className = 'avail-chip ms-auto is-' + state;
+            chip.innerHTML = (state === 'loading' ? '<span class="spinner-border spinner-border-sm"></span> ' : '<i class="bi bi-broadcast"></i> ')
+                + '<span></span>';
+            chip.querySelector('span:last-child').textContent = text;
+        }
+        function fetchAvailability() {
+            var id = ++availReq;
+            setChip('loading', 'Checking availability...');
+            fetch(AVAIL_URL + '?checkIn=' + checkIn.value + '&checkOut=' + checkOut.value, { headers: { 'Accept': 'application/json' } })
+                .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
+                .then(function (data) {
+                    if (id !== availReq) return;
+                    if (!data.valid) { $('dateError').textContent = data.message; setChip('warn', 'Unavailable dates'); return; }
+                    var free = {};
+                    data.freeRoomIds.forEach(function (rid) { free[rid] = true; });
+                    var count = 0, lost = 0;
+                    picks.forEach(function (p) {
+                        var ok = !!free[p.value];
+                        var tile = p.closest('.room-tile');
+                        if (!ok && p.checked) lost++;
+                        p.disabled = !ok;
+                        if (!ok) p.checked = false;
+                        tile.classList.toggle('is-booked', !ok);
+                        if (ok) count++;
+                    });
+                    setChip(count ? 'ok' : 'warn', count + ' of ' + picks.length + ' rooms free');
+                    $('roomError').textContent = lost ? 'A room you picked is booked for these dates and was removed.' : '';
+                    recalc();
+                })
+                .catch(function () { if (id === availReq) setChip('warn', 'Availability will be confirmed on submit'); });
+        }
+
+        // ---------- guests ----------
+        document.querySelectorAll('.step-btn').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var input = $(b.getAttribute('data-target'));
+                var v = num(input) + parseInt(b.getAttribute('data-delta'), 10);
+                v = Math.max(+input.min, Math.min(+input.max, v));
+                input.value = v;
+                input.classList.remove('pop'); void input.offsetWidth; input.classList.add('pop');
+                recalc();
+            });
+        });
+
+        // ---------- summary ----------
+        function recalc() {
+            var rooms = [], perNight = 0, sleeps = 0;
+            picks.forEach(function (p) {
+                var tile = p.closest('.room-tile');
+                tile.classList.toggle('is-selected', p.checked && !p.disabled);
+                if (p.checked && !p.disabled) {
+                    var price = parseFloat(p.getAttribute('data-price')) || 0;
+                    rooms.push({ name: p.getAttribute('data-name'), price: price });
+                    perNight += price;
+                    sleeps += parseInt(p.getAttribute('data-guests'), 10) || 0;
+                }
+            });
+            var nights = datesValid ? Math.max(0, nightsBetween()) : 0;
+            $('nightsBadge').textContent = nights;
+            $('nightsWord').textContent = nights === 1 ? 'night' : 'nights';
+
+            var opt = discount.options[discount.selectedIndex];
+            var dRate = (parseFloat(opt.getAttribute('data-percent')) || 0) / 100;
+            var rate = Math.max(couponRate, dRate);
+            var subtotal = perNight * nights, saving = subtotal * rate;
+
+            $('sIn').textContent = pretty(checkIn.value);
+            $('sOut').textContent = pretty(checkOut.value);
+            var a = num(adults), c = num(children);
+            $('sGuests').textContent = a + (a === 1 ? ' adult' : ' adults') + (c ? ', ' + c + (c === 1 ? ' child' : ' children') : '');
+            var list = $('sRoomList');
+            list.innerHTML = '';
+            if (!rooms.length) list.innerHTML = '<li class="sum-empty">No room selected yet</li>';
+            rooms.forEach(function (r) {
+                var li = document.createElement('li');
+                var name = document.createElement('span'); name.textContent = r.name;
+                var price = document.createElement('span'); price.textContent = money(r.price);
+                li.appendChild(name); li.appendChild(price);
+                list.appendChild(li);
+            });
+            $('sNights').textContent = nights;
+            $('sPerNight').textContent = money(perNight);
+            $('sSubtotal').textContent = money(subtotal);
+            $('sDiscountRow').hidden = !(rate > 0 && subtotal > 0);
+            $('sDiscount').textContent = '-' + money(saving);
+            $('sDiscountLabel').textContent = (dRate > couponRate ? 'Standard discount (' : 'Coupon (') + Math.round(rate * 100) + '%)';
+            var total = subtotal - saving;
+            if (Math.abs(total - shownTotal) > 0.001) animateTotal(total); else $('sTotal').textContent = money(total);
+
+            // Capacity rules (the server enforces the same ones)
+            var guests = a + c, note = $('capacityNote'), msg = '';
+            if (rooms.length && rooms.length > a) msg = 'Each room needs at least one adult - add an adult or remove a room.';
+            else if (rooms.length && guests > sleeps) msg = guests + ' guests, but the selected rooms sleep ' + sleeps + '. Consider adding a room.';
+            note.textContent = msg;
+            note.hidden = !msg;
+
+            // Progress tracker
+            var stayOk = datesValid && a >= 1, roomsOk = rooms.length > 0;
+            var active = !stayOk ? 1 : !roomsOk ? 2 : (rate > 0 ? 4 : 3);
+            document.querySelectorAll('#flowSteps li').forEach(function (li, i) {
+                li.classList.toggle('is-done', i + 1 < active);
+                li.classList.toggle('is-active', i + 1 === active);
+            });
+            $('submitBtn').disabled = !rooms.length || !datesValid || rooms.length > a;
+        }
+
+        // ---------- coupon ----------
+        function checkCoupon() {
+            var code = promo.value.trim().toUpperCase();
+            promo.value = code;
+            if (!code) { couponRate = 0; couponMsg.textContent = ''; recalc(); return; }
+            if (!/^[A-Z0-9_-]{3,40}$/.test(code)) {
+                couponRate = 0; couponMsg.textContent = 'Coupon codes use letters and numbers only.';
+                couponMsg.className = 'small mt-1 text-danger'; recalc(); return;
+            }
+            couponMsg.textContent = 'Checking...'; couponMsg.className = 'small mt-1 text-muted';
+            fetch(COUPON_URL + '?code=' + encodeURIComponent(code) + '&hotelId=' + HOTEL_ID)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    couponRate = data.valid ? data.percent / 100 : 0;
+                    couponMsg.textContent = data.message;
+                    couponMsg.className = 'small mt-1 ' + (data.valid ? 'text-success fw-semibold' : 'text-danger');
+                    promo.closest('.ticket').classList.toggle('is-applied', !!data.valid);
+                    recalc();
+                })
+                .catch(function () { couponMsg.textContent = 'Could not check the coupon right now.'; });
+        }
+        $('applyCoupon').addEventListener('click', checkCoupon);
+        promo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); checkCoupon(); } });
+        promo.addEventListener('change', checkCoupon);
+
+        // ---------- payment method ----------
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                var bank = $('payBank').checked;
+                $('bankFields').hidden = !bank;
+                $('submitLabel').textContent = bank ? 'Submit booking request' : 'Continue to secure payment';
+            });
+        });
+        $('receiptFile').addEventListener('change', function () {
+            var f = this.files[0], err = '';
+            if (f && !/\.(jpe?g|png|webp|pdf)$/i.test(f.name)) err = 'Receipts must be a JPG, PNG, WEBP or PDF file.';
+            else if (f && f.size > 5 * 1024 * 1024) err = 'That file is larger than 5 MB.';
+            $('fileError').textContent = err;
+            if (err) this.value = '';
+        });
+
+        [adults, children].forEach(function (el) { el.addEventListener('input', recalc); });
+        discount.addEventListener('change', recalc);
+        picks.forEach(function (p) { p.addEventListener('change', function () { $('roomError').textContent = ''; recalc(); }); });
+
+        form.addEventListener('submit', function (e) {
+            var anyRoom = picks.some(function (p) { return p.checked && !p.disabled; });
+            if (!validateDates() || !anyRoom) {
+                e.preventDefault();
+                if (!anyRoom) $('roomError').textContent = 'Please choose at least one room.';
+                var bad = !datesValid ? $('step1') : $('step2');
+                bad.classList.remove('shake'); void bad.offsetWidth; bad.classList.add('shake');
+                bad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            var btn = $('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Reserving your rooms...';
+        });
+
+        paintFields();
+        if (validateDates()) fetchAvailability(); else setChip('warn', 'Fix the dates to check availability');
+        recalc();
+    })();
+</script>
+</body>
+</html>

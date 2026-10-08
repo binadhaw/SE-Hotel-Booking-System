@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Hotel staff')}">
+    <title>Hotel staff</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('hotels')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="luxe-hero-banner py-4 px-4 px-md-5">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small">
+                        <li class="breadcrumb-item"><a th:href="@{/hotels}" class="text-white-50">Hotels</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/hotels/{id}(id=${hotel.id})}" class="text-white-50" th:text="${hotel.name}">Hotel</a></li>
+                        <li class="breadcrumb-item active text-white">Staff</li>
+                    </ol>
+                </nav>
+                <h1 class="h2 mb-1">Team at <span th:text="${hotel.name}">Hotel</span></h1>
+                <small class="text-white-50"><span th:text="${#lists.size(staffList)}">0</span> staff member(s) &bull; <span th:text="${hotel.location}">Galle</span></small>
+            </div>
+            <div class="d-flex gap-2">
+                <a th:href="@{/hotels/{id}/rooms(id=${hotel.id})}" class="btn btn-glass"><i class="bi bi-door-open"></i> Rooms</a>
+                <a th:href="@{/hotels/{id}/edit(id=${hotel.id})}" class="btn btn-glass"><i class="bi bi-pencil"></i> Hotel details</a>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="row g-4">
+        <!-- STAFF LIST -->
+        <div th:class="${isOwner} ? 'col-lg-8' : 'col-12'">
+            <div class="luxe-table-container">
+                <div class="table-responsive">
+                    <table class="luxe-table">
+                        <thead>
+                        <tr><th>Name</th><th>Role</th><th>Shift</th><th>Contact</th><th>Since</th><th class="text-end pe-4" th:if="${isOwner}">Actions</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="s : ${staffList}" th:classappend="${!s.active} ? 'opacity-50'">
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="luxe-avatar" th:text="${s.initials}">AB</span>
+                                    <div>
+                                        <div class="fw-semibold" th:text="${s.fullName}">Name</div>
+                                        <small th:unless="${s.active}" class="text-muted">Inactive</small>
+                                        <small th:if="${s.notes}" class="text-muted d-block" th:text="${s.notes}"></small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="amenity-chip" th:text="${s.role}">Front Desk</span></td>
+                            <td class="small text-capitalize" th:text="${#strings.toLowerCase(s.shift)}">morning</td>
+                            <td class="small">
+                                <div th:if="${s.email}"><i class="bi bi-envelope"></i> <span th:text="${s.email}"></span></div>
+                                <div th:if="${s.phone}"><i class="bi bi-telephone"></i> <span th:text="${s.phone}"></span></div>
+                            </td>
+                            <td class="small text-muted" th:text="${#temporals.format(s.startDate, 'MMM yyyy')}">2024</td>
+                            <td class="text-end pe-4" th:if="${isOwner}">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a th:href="@{/staff/{id}/edit(id=${s.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Edit</a>
+                                    <form th:action="@{/staff/{id}/delete(id=${s.id})}" method="post" class="m-0"
+                                          onsubmit="return confirm('Remove this person from the staff list?');">
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-2" type="submit" aria-label="Remove"><i class="bi bi-trash3"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(staffList)}">
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-people fs-1 d-block mb-2"></i>No staff added yet.
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD / EDIT FORM (owner only) -->
+        <div class="col-lg-4" th:if="${isOwner}">
+            <div class="luxe-card p-4 position-sticky" style="top: 6rem;">
+                <h5 class="fw-semibold mb-3" th:text="${staff.id != null ? 'Edit staff member' : 'Add a staff member'}">Add a staff member</h5>
+                <form th:action="${staff.id != null} ? @{/staff/{id}/update(id=${staff.id})} : @{/hotels/{id}/staff(id=${hotel.id})}"
+                      th:object="${staff}" method="post">
+                    <div class="mb-3">
+                        <label class="luxe-form-label" for="fullName">Full name <span class="text-danger">*</span></label>
+                        <input type="text" id="fullName" th:field="*{fullName}" class="form-control luxe-form-control" maxlength="100"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="luxe-form-label" for="role">Role <span class="text-danger">*</span></label>
+                            <select id="role" th:field="*{role}" class="form-select luxe-form-control" th:classappend="${#fields.hasErrors('role')} ? 'is-invalid'">
+                                <option value="">Choose...</option>
+                                <option th:each="r : ${roles}" th:value="${r}" th:text="${r}"></option>
+                            </select>
+                            <div class="invalid-feedback" th:errors="*{role}"></div>
+                        </div>
+                        <div class="col-5">
+                            <label class="luxe-form-label" for="shift">Shift</label>
+                            <select id="shift" th:field="*{shift}" class="form-select luxe-form-control">
+                                <option th:each="sh : ${shifts}" th:value="${sh}" th:text="${#strings.capitalize(#strings.toLowerCase(sh))}"></option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="luxe-form-label" for="email">Email</label>
+                        <input type="email" id="email" th:field="*{email}" class="form-control luxe-form-control"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="luxe-form-label" for="phone">Phone</label>
+                            <input type="tel" id="phone" th:field="*{phone}" class="form-control luxe-form-control"
+                                   th:classappend="${#fields.hasErrors('phone')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:errors="*{phone}"></div>
+                        </div>
+                        <div class="col-5">
+                            <label class="luxe-form-label" for="startDate">Started <span class="text-danger">*</span></label>
+                            <input type="date" id="startDate" th:field="*{startDate}" class="form-control luxe-form-control"
+                                   th:classappend="${#fields.hasErrors('startDate')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:errors="*{startDate}"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="luxe-form-label" for="notes">Notes</label>
+                        <input type="text" id="notes" th:field="*{notes}" class="form-control luxe-form-control" maxlength="255" placeholder="Languages, certifications...">
+                    </div>
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" id="active" th:field="*{active}">
+                        <label class="form-check-label" for="active">Currently working here</label>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-luxe-gold flex-grow-1" th:text="${staff.id != null ? 'Save changes' : 'Add to team'}">Add to team</button>
+                        <a th:if="${staff.id != null}" th:href="@{/hotels/{id}/staff(id=${hotel.id})}" class="btn btn-luxe-outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

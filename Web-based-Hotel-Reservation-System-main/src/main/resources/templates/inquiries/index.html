@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Inquiries & Concierge Feedback')}">
+    <title>Inquiries & Concierge Feedback &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('inquiries')}"></div>
+
+<main class="app-content container my-5">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="/hotels" class="text-decoration-none text-muted">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Inquiries</li>
+                </ol>
+            </nav>
+            <h2 class="h3 fw-bold mb-0">
+                <i class="bi bi-chat-left-dots-fill text-warning me-2"></i> Concierge Inquiries &amp; Guest Feedback
+            </h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="/inquiries/new" class="btn btn-luxe-gold rounded-pill px-3">
+                <i class="bi bi-send-plus me-1"></i> Submit New Inquiry
+            </a>
+            <a href="/hotels" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Back to Hotels
+            </a>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION ALERT -->
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- PRIORITY FILTER CARD -->
+    <div class="luxe-card mb-4 p-3">
+        <form method="get" action="/inquiries" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label for="prioritySelect" class="col-form-label fw-bold small text-secondary">
+                    <i class="bi bi-funnel text-primary me-1"></i> Filter Priority:
+                </label>
+            </div>
+            <div class="col-auto">
+                <select id="prioritySelect" name="priority" class="form-select form-select-sm luxe-form-control" onchange="this.form.submit()">
+                    <option value="ALL" th:selected="${selectedPriority == 'ALL'}">All Priorities</option>
+                    <option value="HIGH" th:selected="${selectedPriority == 'HIGH'}">High &bull; Urgent</option>
+                    <option value="MEDIUM" th:selected="${selectedPriority == 'MEDIUM'}">Medium</option>
+                    <option value="LOW" th:selected="${selectedPriority == 'LOW'}">Low</option>
+                </select>
+            </div>
+            <div class="col-auto" th:if="${selectedPriority != 'ALL'}">
+                <a href="/inquiries" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <i class="bi bi-x-circle me-1"></i> Clear Filter
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- NAVIGATION TABS FOR MANAGER / ADMIN -->
+    <ul class="nav nav-pills mb-4 p-1 bg-light rounded-pill border d-inline-flex" id="inquiryTabs" role="tablist" sec:authorize="hasAnyRole('MANAGER', 'ADMIN')">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill fw-semibold px-4" id="received-tab" data-bs-toggle="tab" data-bs-target="#received" type="button" role="tab">
+                <i class="bi bi-inbox-fill me-1"></i> Received Inquiries
+                <span class="badge bg-primary ms-1" th:text="${#lists.size(receivedInquiries)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-semibold px-4" id="submitted-tab" data-bs-toggle="tab" data-bs-target="#submitted" type="button" role="tab">
+                <i class="bi bi-send-check me-1"></i> My Sent Inquiries
+                <span class="badge bg-secondary ms-1" th:text="${#lists.size(submittedInquiries)}">0</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="inquiryTabsContent">
+
+        <!-- RECEIVED INQUIRIES TAB (Manager / Admin) -->
+        <div class="tab-pane fade show active" id="received" role="tabpanel" sec:authorize="hasAnyRole('MANAGER', 'ADMIN')">
+            <div class="luxe-table-container">
+                <div class="table-responsive">
+                    <table class="luxe-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 100px;">Priority</th>
+                            <th>Role</th>
+                            <th>Subject &amp; Inquiry</th>
+                            <th>Sender Info</th>
+                            <th>Resolution / Reason</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="inq : ${receivedInquiries}">
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.priority == 'HIGH' ? 'pill-priority-high' : (inq.priority == 'MEDIUM' ? 'pill-pending' : 'pill-approved')}"
+                                      th:text="${inq.priority}">HIGH</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill" th:text="${inq.senderRole}">USER</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${inq.subject}">Subject</div>
+                                <small class="text-muted font-monospace" th:text="${inq.displayTicket + ' &bull; ' + inq.recipientLabel}">TCK</small>
+                                <p class="text-muted small mb-0 mt-1" th:text="${inq.message}" style="max-width: 320px;"></p>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${inq.name}">Name</div>
+                                <small class="text-muted" th:text="${inq.email}">email@example.com</small>
+                            </td>
+                            <td>
+                                <div th:if="${inq.response != null}" class="p-2 bg-light rounded small border">
+                                    <i class="bi bi-reply-fill text-primary me-1"></i>
+                                    <span th:text="${inq.response}"></span>
+                                </div>
+                                <span th:if="${inq.response == null}" class="text-muted small fst-italic">Awaiting your reply</span>
+                            </td>
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.status == 'RESOLVED' ? 'pill-resolved' : (inq.status == 'IGNORED' ? 'pill-cancelled' : 'pill-pending')}"
+                                      th:text="${inq.status}">PENDING</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex gap-1.5 justify-content-end">
+                                    <a th:href="@{/inquiries/{id}/respond(id=${inq.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5">
+                                        <i class="bi bi-reply me-1"></i> Respond
+                                    </a>
+                                    <form th:action="@{/inquiries/{id}/delete(id=${inq.id})}" method="post" class="m-0 d-inline" onsubmit="return confirm('Delete this inquiry?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete Inquiry">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(receivedInquiries)}">
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox text-muted fs-1 d-block mb-3"></i>
+                                <h5 class="fw-bold text-secondary mb-1">No received inquiries</h5>
+                                <p class="text-muted small mb-0">All inquiries have been addressed or no messages match the selected priority.</p>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SUBMITTED INQUIRIES TAB (Manager / Admin) -->
+        <div class="tab-pane fade" id="submitted" role="tabpanel" sec:authorize="hasAnyRole('MANAGER', 'ADMIN')">
+            <div class="luxe-table-container">
+                <div class="table-responsive">
+                    <table class="luxe-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 100px;">Priority</th>
+                            <th>Recipient</th>
+                            <th>Subject &amp; Message</th>
+                            <th>Admin Response</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="inq : ${submittedInquiries}">
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.priority == 'HIGH' ? 'pill-priority-high' : (inq.priority == 'MEDIUM' ? 'pill-pending' : 'pill-approved')}"
+                                      th:text="${inq.priority}">HIGH</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill" th:text="${inq.recipientLabel}">ADMIN</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark" th:text="${inq.subject}">Subject</div>
+                                <small class="text-muted font-monospace" th:text="${inq.displayTicket + ' &bull; ' + inq.recipientLabel}">TCK</small>
+                                <p class="text-muted small mb-0 mt-1" th:text="${inq.message}" style="max-width: 380px;"></p>
+                            </td>
+                            <td>
+                                <span th:if="${inq.response != null}" class="small text-dark" th:text="${inq.response}"></span>
+                                <span th:if="${inq.response == null}" class="text-muted small fst-italic">Awaiting response</span>
+                            </td>
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.status == 'RESOLVED' ? 'pill-resolved' : (inq.status == 'IGNORED' ? 'pill-cancelled' : 'pill-pending')}"
+                                      th:text="${inq.status}">PENDING</span>
+                                <div th:if="${inq.status == 'PENDING' and inq.createdWithUsername == #authentication.name}" class="d-flex gap-1 mt-2">
+                                    <a th:href="@{/inquiries/{id}/edit(id=${inq.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0">Edit</a>
+                                    <form th:action="@{/inquiries/{id}/withdraw(id=${inq.id})}" method="post" class="m-0" onsubmit="return confirm('Withdraw this inquiry?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">Withdraw</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(submittedInquiries)}">
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-send text-muted fs-1 d-block mb-3"></i>
+                                <h5 class="fw-bold text-secondary mb-1">No sent inquiries</h5>
+                                <p class="text-muted small mb-0">You haven't submitted any inquiries yet.</p>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- NORMAL USER OR AGENT VIEW (Single Table) -->
+        <div sec:authorize="hasAnyRole('USER', 'AGENT')">
+            <div class="luxe-table-container">
+                <div class="table-responsive">
+                    <table class="luxe-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 110px;">Priority</th>
+                            <th>Subject &amp; Inquiry Message</th>
+                            <th>Concierge Reply</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="inq : ${submittedInquiries}">
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.priority == 'HIGH' ? 'pill-priority-high' : (inq.priority == 'MEDIUM' ? 'pill-pending' : 'pill-approved')}"
+                                      th:text="${inq.priority}">HIGH</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-6" th:text="${inq.subject}">Subject</div>
+                                <small class="text-muted font-monospace" th:text="${inq.displayTicket + ' &bull; to ' + inq.recipientLabel}">TCK</small>
+                                <p class="text-muted small mb-0 mt-1" th:text="${inq.message}" style="max-width: 480px;"></p>
+                            </td>
+                            <td>
+                                <div th:if="${inq.response != null}" class="p-3 bg-light rounded-3 border small">
+                                    <div class="fw-bold text-primary mb-1 d-flex align-items-center gap-1">
+                                        <i class="bi bi-reply-fill"></i> Management Response:
+                                    </div>
+                                    <span th:text="${inq.response}">Response text</span>
+                                </div>
+                                <span th:if="${inq.response == null}" class="text-muted small fst-italic">
+                                    <i class="bi bi-hourglass-split text-warning me-1"></i> In review by concierge
+                                </span>
+                            </td>
+                            <td>
+                                <span class="luxe-pill"
+                                      th:classappend="${inq.status == 'RESOLVED' ? 'pill-resolved' : (inq.status == 'IGNORED' ? 'pill-cancelled' : 'pill-pending')}"
+                                      th:text="${inq.status}">STATUS</span>
+                                <div th:if="${inq.status == 'PENDING' and inq.createdWithUsername == #authentication.name}" class="d-flex gap-1 mt-2">
+                                    <a th:href="@{/inquiries/{id}/edit(id=${inq.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2 py-0">Edit</a>
+                                    <form th:action="@{/inquiries/{id}/withdraw(id=${inq.id})}" method="post" class="m-0" onsubmit="return confirm('Withdraw this inquiry?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0">Withdraw</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(submittedInquiries)}">
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <i class="bi bi-chat-square-text text-muted fs-1 d-block mb-3"></i>
+                                <h5 class="fw-bold text-secondary mb-1">No inquiries submitted</h5>
+                                <p class="text-muted small mb-3">Have questions about amenities, dining, or custom travel plans? Contact our concierge.</p>
+                                <a href="/inquiries/new" class="btn btn-luxe-gold btn-sm rounded-pill px-3">
+                                    <i class="bi bi-send me-1"></i> Send an Inquiry
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

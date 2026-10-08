@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('User management')}">
+    <title>User management</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('admin_users')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="h3 fw-bold mb-0"><i class="bi bi-people-fill text-warning me-2"></i>User management</h2>
+            <small class="text-muted">Search accounts, suspend fraudulent users or remove them from the platform.</small>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- Counters -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-blue"><i class="bi bi-suitcase2"></i></div>
+                <div><small class="text-muted">Tourists</small><h4 class="fw-bold mb-0" th:text="${countUsers}">0</h4></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-gold"><i class="bi bi-building"></i></div>
+                <div><small class="text-muted">Hotel managers</small><h4 class="fw-bold mb-0" th:text="${countManagers}">0</h4></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-purple"><i class="bi bi-compass"></i></div>
+                <div><small class="text-muted">Travel agents</small><h4 class="fw-bold mb-0" th:text="${countAgents}">0</h4></div></div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="kpi-stat-card"><div class="kpi-icon-box kpi-red"><i class="bi bi-shield-lock"></i></div>
+                <div><small class="text-muted">Administrators</small><h4 class="fw-bold mb-0" th:text="${countAdmins}">0</h4></div></div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="luxe-card mb-4">
+        <div class="luxe-card-body p-3">
+            <form th:action="@{/admin/users}" method="get" class="row g-2 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" th:value="${q}" class="form-control" placeholder="Search by username, name or email">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="role" class="form-select">
+                        <option value="ALL" th:selected="${currentRole == 'ALL'}">All roles</option>
+                        <option value="USER" th:selected="${currentRole == 'USER'}">Tourists</option>
+                        <option value="MANAGER" th:selected="${currentRole == 'MANAGER'}">Hotel managers</option>
+                        <option value="AGENT" th:selected="${currentRole == 'AGENT'}">Travel agents</option>
+                        <option value="ADMIN" th:selected="${currentRole == 'ADMIN'}">Administrators</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button class="btn btn-dark flex-grow-1" type="submit">Filter</button>
+                    <a th:href="@{/admin/users}" class="btn btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="luxe-table-container">
+        <div class="table-responsive">
+            <table class="luxe-table">
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Contact</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined / last login</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="u : ${users}">
+                    <td>
+                        <div class="fw-bold" th:text="${u.fullName}">Name</div>
+                        <small class="text-muted">@<span th:text="${u.username}">user</span></small>
+                    </td>
+                    <td>
+                        <div class="small" th:text="${u.email}">email</div>
+                        <small class="text-muted" th:text="${u.phone}"></small>
+                    </td>
+                    <td><span class="luxe-role-pill" th:classappend="${'role-' + #strings.toLowerCase(u.role)}" th:text="${u.roleLabel}">Tourist</span></td>
+                    <td>
+                        <span class="luxe-pill" th:classappend="${u.enabled ? 'pill-approved' : 'pill-cancelled'}" th:text="${u.enabled ? 'Active' : 'Suspended'}">Active</span>
+                    </td>
+                    <td class="small text-muted">
+                        <div th:text="${#temporals.format(u.createdAt, 'dd MMM yyyy')}">date</div>
+                        <div th:text="${u.lastLoginAt != null ? #temporals.format(u.lastLoginAt, 'dd MMM yyyy HH:mm') : 'never logged in'}"></div>
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex gap-2 justify-content-end" th:if="${u.role != 'ADMIN'}">
+                            <form th:if="${u.enabled}" th:action="@{/admin/users/{id}/suspend(id=${u.id})}" method="post" class="m-0"
+                                  onsubmit="return confirm('Suspend this account? The user will not be able to log in.');">
+                                <button class="btn btn-sm btn-outline-warning rounded-pill px-3"><i class="bi bi-slash-circle me-1"></i>Suspend</button>
+                            </form>
+                            <form th:unless="${u.enabled}" th:action="@{/admin/users/{id}/activate(id=${u.id})}" method="post" class="m-0">
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-3"><i class="bi bi-check-circle me-1"></i>Activate</button>
+                            </form>
+                            <form th:action="@{/admin/users/{id}/delete(id=${u.id})}" method="post" class="m-0"
+                                  onsubmit="return confirm('Permanently delete this account? Their booking history is kept.');">
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete"><i class="bi bi-trash3"></i></button>
+                            </form>
+                        </div>
+                        <small th:if="${u.role == 'ADMIN'}" class="text-muted">Protected</small>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(users)}">
+                    <td colspan="6" class="text-center text-muted py-5">No accounts match your search.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

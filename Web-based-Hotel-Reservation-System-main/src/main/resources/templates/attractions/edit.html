@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Edit attraction')}">
+    <title>Edit attraction</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('portal')}"></div>
+
+<main class="app-content container my-5" style="max-width: 720px;">
+    <h2 class="h3 fw-bold mb-4"><i class="bi bi-geo text-warning me-2"></i>Edit attraction</h2>
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <form th:action="@{/attractions/{id}/update(id=${attraction.id})}" th:object="${attraction}" method="post" class="luxe-card p-4">
+        <div class="mb-3">
+            <label class="luxe-form-label" for="name">Name <span class="text-danger">*</span></label>
+            <input type="text" id="name" th:field="*{name}" class="form-control luxe-form-control" maxlength="120"
+                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+            <div class="invalid-feedback" th:errors="*{name}"></div>
+        </div>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <label class="luxe-form-label" for="category">Category</label>
+                <select id="category" th:field="*{category}" class="form-select luxe-form-control">
+                    <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"></option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="luxe-form-label" for="city">Town / city <span class="text-danger">*</span></label>
+                <input type="text" id="city" th:field="*{city}" class="form-control luxe-form-control" maxlength="80"
+                       th:classappend="${#fields.hasErrors('city')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:errors="*{city}"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="luxe-form-label" for="hotelId">Near hotel</label>
+                <select id="hotelId" name="hotelId" class="form-select luxe-form-control">
+                    <option value="">Not near a specific hotel</option>
+                    <option th:each="h : ${hotels}" th:value="${h.id}" th:text="${h.name + ' (' + h.location + ')'}"
+                            th:selected="${attraction.hotel != null and attraction.hotel.id == h.id}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="luxe-form-label" for="distanceKm">Distance (km)</label>
+                <input type="number" step="0.1" min="0" id="distanceKm" th:field="*{distanceKm}" class="form-control luxe-form-control"
+                       th:classappend="${#fields.hasErrors('distanceKm')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:errors="*{distanceKm}"></div>
+            </div>
+            <div class="col-md-3">
+                <label class="luxe-form-label" for="estimatedCost">Cost (USD) <span class="text-danger">*</span></label>
+                <input type="number" step="1" min="0" id="estimatedCost" th:field="*{estimatedCost}" class="form-control luxe-form-control"
+                       th:classappend="${#fields.hasErrors('estimatedCost')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:errors="*{estimatedCost}"></div>
+            </div>
+        </div>
+        <div class="mb-4">
+            <label class="luxe-form-label" for="description">Description</label>
+            <textarea id="description" th:field="*{description}" rows="3" maxlength="1000" class="form-control luxe-form-control"
+                      th:classappend="${#fields.hasErrors('description')} ? 'is-invalid'"></textarea>
+            <div class="invalid-feedback" th:errors="*{description}"></div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <a href="javascript:history.back()" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4">Save changes</button>
+        </div>
+    </form>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>
