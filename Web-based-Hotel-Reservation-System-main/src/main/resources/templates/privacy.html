@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Privacy notice')}">
+    <title>Privacy notice</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('privacy')}"></div>
+
+<main class="app-content container my-5" style="max-width: 820px;">
+    <h2 class="h3 fw-bold mb-4"><i class="bi bi-shield-lock-fill text-warning me-2"></i>Privacy notice</h2>
+
+    <div class="luxe-card p-4">
+        <h5 class="fw-bold">What we collect</h5>
+        <p class="small text-secondary">Your name, username, email and (optionally) phone number; your bookings, payments,
+            reviews, inquiries and trip requests; and, if you choose to give them, your travel preferences
+            (interests, preferred destination and budget).</p>
+
+        <h5 class="fw-bold mt-4">Why we use it</h5>
+        <p class="small text-secondary">To manage your account and bookings, pass your booking and inquiry details to the
+            hotel you book with, pass trip requests to the travel agent you choose, and send you booking emails and
+            in-app notifications. Deals and coupons are only emailed if you opted in.</p>
+
+        <h5 class="fw-bold mt-4">How we protect it</h5>
+        <ul class="small text-secondary">
+            <li>Passwords and security answers are stored as one-way BCrypt hashes - nobody can read them.</li>
+            <li>Phone numbers, card holder names and contact details are encrypted in the database (AES-256-GCM).</li>
+            <li>Card numbers and CVVs are never stored - only the card brand and the last four digits.</li>
+            <li>Uploaded payment receipts can only be opened by you, the hotel's manager and administrators.</li>
+            <li>Hotel managers only see bookings and inquiries for their own hotels.</li>
+        </ul>
+
+        <h5 class="fw-bold mt-4">Your choices</h5>
+        <ul class="small text-secondary mb-0">
+            <li>Edit your details and travel preferences, or turn promotional emails off, on your profile page at any time.</li>
+            <li>Edit or delete your own reviews and inquiries.</li>
+            <li>To close your account, send an inquiry and an administrator will remove it. Booking records are kept
+                for the hotel's accounting, but your login is deleted.</li>
+        </ul>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
