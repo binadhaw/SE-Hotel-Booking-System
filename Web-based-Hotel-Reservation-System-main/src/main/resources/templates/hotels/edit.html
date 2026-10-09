@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Edit Hotel & Rooms')}">
+    <title>Edit Hotel & Rooms &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+<div th:replace="~{fragments/navbar :: navbar('hotels')}"></div>
+<div th:replace="~{fragments/hotel-form-parts :: formAssets}"></div>
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/hotels" class="text-decoration-none text-muted">Hotels</a></li>
+                            <li class="breadcrumb-item active" aria-current="page" th:text="${hotel.name}">Property</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Manage Property Details &amp; Suites</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/hotels/{id}/rooms/new(id=${hotel.id})}" class="btn btn-luxe-gold btn-sm rounded-pill px-3">
+                        <i class="bi bi-plus-lg me-1"></i> Add New Room
+                    </a>
+                    <a href="/hotels" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Hotels
+                    </a>
+                </div>
+            </div>
+            <!-- EDIT HOTEL FORM CARD -->
+            <div class="luxe-card shadow-sm mb-4">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-sliders text-warning fs-5"></i>
+                        <h5 class="mb-0 text-white fw-bold">Edit Hotel Profile</h5>
+                    </div>
+                    <span class="luxe-pill pill-approved" th:text="${hotel.status}">APPROVED</span>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+                    <!-- enctype is required so new photos can be uploaded -->
+                    <form th:action="@{/hotels/{id}/update(id=${hotel.id})}" th:object="${hotel}" method="post" enctype="multipart/form-data">
+                        <div th:if="${hotel.status == 'REJECTED'}" class="alert alert-warning small">
+                            <i class="bi bi-exclamation-triangle me-1"></i>
+                            This registration was rejected<span th:if="${hotel.statusNote}" th:text="': ' + ${hotel.statusNote}"></span>.
+                            Saving your corrections re-submits it for approval.
+                        </div>
+                        <div th:if="${imageError != null}" class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                            <div th:text="${imageError}"></div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-building text-primary"></i> Hotel Name
+                                </label>
+                                <input type="text" th:field="*{name}" class="form-control luxe-form-control" th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''" />
+                                <div class="invalid-feedback" th:errors="*{name}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-geo-alt-fill text-danger"></i> Location
+                                </label>
+                                <input type="text" th:field="*{location}" class="form-control luxe-form-control" th:classappend="${#fields.hasErrors('location')} ? 'is-invalid' : ''" />
+                                <div class="invalid-feedback" th:errors="*{location}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label"><i class="bi bi-telephone text-primary"></i> Reception phone</label>
+                                <input type="tel" th:field="*{contactPhone}" class="form-control luxe-form-control" th:classappend="${#fields.hasErrors('contactPhone')} ? 'is-invalid' : ''" />
+                                <div class="invalid-feedback" th:errors="*{contactPhone}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label"><i class="bi bi-envelope text-primary"></i> Reservations email</label>
+                                <input type="email" th:field="*{contactEmail}" class="form-control luxe-form-control" th:classappend="${#fields.hasErrors('contactEmail')} ? 'is-invalid' : ''" />
+                                <div class="invalid-feedback" th:errors="*{contactEmail}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-card-text text-secondary"></i> Property Description
+                                </label>
+                                <textarea th:field="*{description}" rows="3" maxlength="255" class="form-control luxe-form-control" th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''"></textarea>
+                                <div class="invalid-feedback" th:errors="*{description}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-images text-success"></i> Hotel Photos
+                                </label>
+                                <div th:replace="~{fragments/hotel-form-parts :: imageUploader(${hotel.imagePaths}, ${maxImages})}"></div>
+                            </div>
+                            <div class="col-12">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-stars text-warning"></i> Key Amenities &amp; Features
+                                </label>
+                                <div class="form-text small text-muted mb-2">Click to add or remove amenities.</div>
+                                <div th:replace="~{fragments/hotel-form-parts :: amenityPicker(${amenityOptions}, ${selectedAmenities})}"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <a href="/hotels" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-luxe-primary rounded-pill px-4">
+                                <i class="bi bi-check2 me-1"></i> Update Hotel Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- MANAGED ROOMS SECTION -->
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header bg-light py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-door-open-fill text-primary fs-5"></i>
+                        <h5 class="mb-0 fw-bold">Rooms &amp; Suites Inventory</h5>
+                    </div>
+                    <a th:href="@{/hotels/{id}/rooms/new(id=${hotel.id})}" class="btn btn-sm btn-success rounded-pill px-3">
+                        <i class="bi bi-plus-circle me-1"></i> Add Room
+                    </a>
+                </div>
+                <div class="luxe-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="luxe-table">
+                            <thead>
+                            <tr>
+                                <th>Room Number</th>
+                                <th>Category / Type</th>
+                                <th>Guests &amp; Beds</th>
+                                <th>Rate ($ / Night)</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="room : ${hotel.rooms}">
+                                <td>
+                                    <span class="fw-bold font-monospace fs-6 text-dark" th:text="'#' + ${room.roomNumber}"></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill" th:text="${room.roomType}">Standard</span>
+                                </td>
+                                <td>
+                                    <div class="small fw-semibold"><i class="bi bi-people me-1 text-secondary"></i><span th:text="${room.maxGuests != null ? 'Sleeps ' + room.maxGuests : 'Not set'}">Sleeps 2</span></div>
+                                    <div class="small text-muted"><i class="bi bi-moon-stars me-1"></i><span th:text="${room.bedSummary}">1 King bed</span></div>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-success fs-6" th:text="${'$' + room.price}">$150</span>
+                                </td>
+                                <td>
+                                    <span class="luxe-pill"
+                                          th:classappend="${room.reserved ? 'pill-pending' : (room.available ? 'pill-available' : 'pill-occupied')}"
+                                          th:text="${room.displayStatus}"></span>
+                                    <div th:if="${room.reserved}" class="small text-muted mt-1">Until <span th:text="${room.reservedUntil}"></span></div>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-flex gap-1.5 justify-content-end">
+                                        <a th:href="@{/rooms/{id}/edit(id=${room.id})}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5">
+                                            <i class="bi bi-pencil me-1"></i> Edit
+                                        </a>
+                                        <form th:action="@{/rooms/{id}/delete(id=${room.id})}" method="post" class="m-0 d-inline" onsubmit="return confirm('Delete this room?');">
+                                            <input type="hidden" name="hotelId" th:value="${hotel.id}" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete Room">
+                                                <i class="bi bi-trash3"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(hotel.rooms)}">
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-door-closed text-muted fs-3 d-block mb-2"></i>
+                                    No rooms added yet for this property. Click <strong>Add Room</strong> above to configure suites.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

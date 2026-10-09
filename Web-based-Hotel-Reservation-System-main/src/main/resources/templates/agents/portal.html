@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Agent workspace')}">
+    <title>Agent workspace</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('portal')}"></div>
+
+<main class="app-content container my-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <h2 class="h3 fw-bold mb-0"><i class="bi bi-briefcase-fill text-warning me-2"></i>Travel agent workspace</h2>
+        <div class="d-flex gap-2">
+            <a th:if="${profile.id != null and profile.status == 'APPROVED'}" th:href="@{/agents/{id}/profile(id=${profile.id})}"
+               class="btn btn-outline-dark btn-sm rounded-pill px-3"><i class="bi bi-person-badge me-1"></i> View my public profile</a>
+            <a th:href="@{/agent/dashboard}" class="btn btn-luxe-primary btn-sm rounded-pill px-3"><i class="bi bi-speedometer2 me-1"></i> Performance</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <!-- STATUS & KPIs -->
+    <div th:if="${profile.id != null}" class="luxe-card p-4 mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <small class="text-muted text-uppercase fw-bold d-block mb-1">Verification</small>
+                <span class="luxe-pill" th:classappend="${profile.status == 'APPROVED' ? 'pill-approved' : (profile.status == 'NEEDS_INFO' ? 'pill-refund' : 'pill-pending')}"
+                      th:text="${profile.status}">APPROVED</span>
+            </div>
+            <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block mb-1">Jobs completed</small><h4 class="fw-bold mb-0" th:text="${profile.completedJobs}">0</h4></div>
+            <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block mb-1">Reward points</small><h4 class="fw-bold mb-0 text-warning" th:text="${profile.rewardPoints}">0</h4></div>
+            <div class="col-md-3"><small class="text-muted text-uppercase fw-bold d-block mb-1">Rank score</small><h4 class="fw-bold mb-0 text-success" th:text="${profile.rankingScore}">0</h4></div>
+        </div>
+        <div th:if="${profile.status == 'NEEDS_INFO' and profile.adminNote != null}" class="mt-3 p-3 bg-danger-subtle rounded-3 text-danger small">
+            <strong><i class="bi bi-exclamation-triangle-fill me-1"></i> Administrator note:</strong> <span th:text="${profile.adminNote}"></span>
+            <div>Update your profile below to send it back for review.</div>
+        </div>
+        <div th:if="${profile.status == 'PENDING'}" class="mt-3 small text-muted"><i class="bi bi-hourglass-split"></i> Waiting for an administrator to verify you. Tourists can find you once approved.</div>
+    </div>
+
+    <ul class="nav nav-pills mb-3 gap-2" role="tablist">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#requests" type="button">
+            Trip requests <span class="badge bg-warning text-dark" th:text="${#lists.size(incomingRequests)}">0</span></button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#profileTab" type="button">Profile</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#samples" type="button">Sample itineraries</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#experiences" type="button">Local experiences</button></li>
+    </ul>
+
+    <div class="tab-content">
+
+        <!-- ================= TRIP REQUESTS ================= -->
+        <div class="tab-pane fade show active" id="requests">
+            <div th:each="req : ${incomingRequests}" class="luxe-card p-4 mb-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                    <div>
+                        <h6 class="fw-bold mb-0" th:text="${req.userName}">Customer</h6>
+                        <small class="text-muted" th:text="${req.userEmail}">mail</small>
+                    </div>
+                    <span class="luxe-pill" th:classappend="${req.status == 'ACCEPTED' ? 'pill-approved' : (req.status == 'REJECTED' ? 'pill-cancelled' : 'pill-pending')}"
+                          th:text="${req.status}">PENDING</span>
+                </div>
+                <div class="d-flex flex-wrap gap-3 small text-muted mb-2">
+                    <span th:if="${req.travelStart}"><i class="bi bi-calendar-range"></i>
+                        <span th:text="${#temporals.format(req.travelStart, 'dd MMM')}"></span> &ndash; <span th:text="${req.travelEnd != null ? #temporals.format(req.travelEnd, 'dd MMM yyyy') : '?'}"></span></span>
+                    <span th:if="${req.travellers}"><i class="bi bi-people"></i> <span th:text="${req.travellers}"></span> traveller(s)</span>
+                    <span th:if="${req.budget}"><i class="bi bi-cash"></i> budget $<span th:text="${#numbers.formatDecimal(req.budget, 1, 0)}"></span></span>
+                    <span th:if="${req.bookingReference}"><i class="bi bi-building"></i> hotel booking <span th:text="${req.bookingReference}"></span></span>
+                </div>
+                <p class="small p-2 bg-light rounded border mb-2"><strong>Requirements:</strong> <span th:text="${req.userPreferences}">prefs</span></p>
+                <div th:if="${req.status == 'RE_REQUESTED'}" class="alert alert-warning p-2 small mb-2">
+                    <strong><i class="bi bi-arrow-repeat me-1"></i>Changes requested:</strong> <span th:text="${req.reRequestFeedback}"></span>
+                </div>
+
+                <!-- Version history -->
+                <details th:if="${!#lists.isEmpty(req.revisions)}" class="mb-2">
+                    <summary class="small fw-semibold">Sent versions (<span th:text="${#lists.size(req.revisions)}">1</span>)</summary>
+                    <div th:each="rev : ${req.revisions}" class="small border-start border-3 ps-2 my-2">
+                        <strong th:text="'v' + ${rev.version}">v1</strong> &bull; $<span th:text="${#numbers.formatDecimal(rev.price, 1, 2)}"></span>
+                        &bull; <span class="text-muted" th:text="${#temporals.format(rev.createdAt, 'dd MMM HH:mm')}"></span>
+                        <div th:if="${rev.requestedChanges}" class="text-muted"><i class="bi bi-chat-square-quote"></i> Traveller asked: <span th:text="${rev.requestedChanges}"></span></div>
+                        <div th:if="${rev.changeNote}" class="fst-italic"><i class="bi bi-arrow-repeat"></i> You changed: <span th:text="${rev.changeNote}"></span></div>
+                    </div>
+                </details>
+
+                <!-- Send / update plan -->
+                <form th:if="${req.openForProposal}" th:action="@{/agents/proposal/submit}" method="post" class="pt-2 border-top">
+                    <input type="hidden" name="requestId" th:value="${req.id}">
+                    <label class="small fw-semibold mb-1" th:text="${#lists.isEmpty(req.revisions) ? 'Your itinerary' : 'Updated itinerary (sent as v' + (#lists.size(req.revisions) + 1) + ')'}">Plan</label>
+                    <textarea name="proposedItineraryPlan" class="form-control form-control-sm mb-2" rows="5" maxlength="4000" required
+                              placeholder="Day 1: ...&#10;Day 2: ..." th:text="${req.proposedItineraryPlan}"></textarea>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <input type="number" step="0.01" min="0" name="proposedPrice" class="form-control form-control-sm" placeholder="Package price ($)" required
+                                   th:value="${req.proposedPrice > 0 ? req.proposedPrice : ''}">
+                        </div>
+                        <div class="col-md-8" th:if="${!#lists.isEmpty(req.revisions)}">
+                            <input type="text" name="changeNote" class="form-control form-control-sm" maxlength="500" required placeholder="What changed in this version? (shown to the traveller)">
+                        </div>
+                    </div>
+                    <details class="mb-2">
+                        <summary class="small">Recommend attractions in this plan</summary>
+                        <div class="border rounded p-2 mt-1" style="max-height: 200px; overflow-y: auto;">
+                            <div class="form-check small" th:each="a : ${allAttractions}">
+                                <input class="form-check-input" type="checkbox" name="attractionIds" th:value="${a.id}" th:id="${'att-' + req.id + '-' + a.id}"
+                                       th:checked="${req.currentRevision != null and #lists.contains(req.currentRevision.attractions, a)}">
+                                <label class="form-check-label" th:for="${'att-' + req.id + '-' + a.id}"
+                                       th:text="${a.city + ' - ' + a.name + (a.free ? ' (free)' : ' ($' + #numbers.formatDecimal(a.estimatedCost, 1, 0) + ')')}"></label>
+                            </div>
+                        </div>
+                    </details>
+                    <button type="submit" class="btn btn-sm btn-luxe-primary rounded-pill px-3"><i class="bi bi-send me-1"></i> Send plan</button>
+                </form>
+            </div>
+            <div th:if="${#lists.isEmpty(incomingRequests)}" class="luxe-card p-5 text-center text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>No trip requests yet. Approved agents appear in the tourists' agent directory.
+            </div>
+        </div>
+
+        <!-- ================= PROFILE ================= -->
+        <div class="tab-pane fade" id="profileTab">
+            <div class="luxe-card p-4">
+                <form th:action="@{/agents/save-profile}" th:object="${agentProfile}" method="post">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="luxe-form-label">Agency / full name <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{agencyName}" class="form-control luxe-form-control" required maxlength="100">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="luxe-form-label">Phone <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{phone}" class="form-control luxe-form-control" required maxlength="30">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="luxe-form-label">Experience (years)</label>
+                            <input type="number" th:field="*{experienceYears}" class="form-control luxe-form-control" min="0" max="60">
+                        </div>
+                        <div class="col-12">
+                            <label class="luxe-form-label">About you (shown on your public profile)</label>
+                            <textarea th:field="*{bio}" rows="3" maxlength="1000" class="form-control luxe-form-control" placeholder="Who you are and how you plan trips"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="luxe-form-label">Specializations</label>
+                            <input type="text" th:field="*{specializations}" class="form-control luxe-form-control" placeholder="e.g. Wildlife safaris, family trips">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="luxe-form-label">Verification documents link</label>
+                            <input type="text" th:field="*{documentsSubmittedUrl}" class="form-control luxe-form-control" placeholder="Link to licence / ID">
+                        </div>
+                        <div class="col-12">
+                            <label class="luxe-form-label">Featured local experiences</label>
+                            <textarea th:field="*{localExperiences}" rows="3" maxlength="1000" class="form-control luxe-form-control"></textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-luxe-gold rounded-pill px-4 mt-3">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> <span th:text="${profile.id == null ? 'Submit for review' : 'Save profile'}">Save</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= SAMPLE ITINERARIES ================= -->
+        <div class="tab-pane fade" id="samples">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div th:if="${profile.id != null}">
+                        <div th:each="p : ${profile.sampleItineraries}" class="luxe-card p-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong th:text="${p.title}">Title</strong>
+                                <span class="small text-muted"><span th:text="${p.durationDays}">3</span> days &bull; $<span th:text="${#numbers.formatDecimal(p.estimatedCost, 1, 0)}"></span></span>
+                            </div>
+                            <p class="small text-secondary mb-1" th:text="${p.description}" style="white-space: pre-line;"></p>
+                            <details class="small">
+                                <summary class="text-primary">Edit</summary>
+                                <form th:action="@{/agents/itinerary/{id}/update(id=${p.id})}" method="post" class="mt-2">
+                                    <input type="text" name="title" th:value="${p.title}" class="form-control form-control-sm mb-2" required maxlength="200">
+                                    <textarea name="description" class="form-control form-control-sm mb-2" rows="3" maxlength="1000" th:text="${p.description}"></textarea>
+                                    <div class="row g-2 mb-2">
+                                        <div class="col"><input type="number" name="durationDays" min="1" max="60" th:value="${p.durationDays}" class="form-control form-control-sm" required></div>
+                                        <div class="col"><input type="number" name="estimatedCost" min="0" step="1" th:value="${p.estimatedCost}" class="form-control form-control-sm" required></div>
+                                    </div>
+                                    <button class="btn btn-sm btn-dark" type="submit">Save</button>
+                                </form>
+                            </details>
+                            <form th:action="@{/agents/itinerary/{id}/delete(id=${p.id})}" method="post" class="m-0" onsubmit="return confirm('Remove this sample itinerary?');">
+                                <button class="btn btn-link btn-sm text-danger p-0" type="submit">Remove</button>
+                            </form>
+                        </div>
+                        <p th:if="${#lists.isEmpty(profile.sampleItineraries)}" class="text-muted small">No sample itineraries yet.</p>
+                    </div>
+                    <p th:if="${profile.id == null}" class="text-muted small">Save your profile first.</p>
+                </div>
+                <div class="col-lg-5">
+                    <form th:action="@{/agents/add-itinerary}" method="post" class="luxe-card p-3">
+                        <h6 class="fw-bold">Add a sample itinerary</h6>
+                        <input type="text" name="title" class="form-control form-control-sm mb-2" placeholder="e.g. 5-day Cultural Triangle" required maxlength="200">
+                        <textarea name="description" class="form-control form-control-sm mb-2" rows="4" maxlength="1000" placeholder="Day-by-day outline"></textarea>
+                        <div class="row g-2 mb-2">
+                            <div class="col"><input type="number" name="durationDays" min="1" max="60" class="form-control form-control-sm" placeholder="Days" required></div>
+                            <div class="col"><input type="number" name="estimatedCost" min="0" step="1" class="form-control form-control-sm" placeholder="Cost $" required></div>
+                        </div>
+                        <button class="btn btn-sm btn-dark w-100" type="submit">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= LOCAL EXPERIENCES (PBI-22) ================= -->
+        <div class="tab-pane fade" id="experiences">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div th:each="a : ${myAttractions}" class="luxe-card p-3 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong><i class="bi" th:classappend="${a.categoryIcon}"></i> <span th:text="${a.name}">Name</span></strong>
+                            <span class="small" th:text="${a.free ? 'Free' : '$' + #numbers.formatDecimal(a.estimatedCost, 1, 0)}">Free</span>
+                        </div>
+                        <small class="text-muted">
+                            <span th:text="${a.category + ' - ' + a.city}"></span>
+                            <span th:if="${a.hotel != null}" th:text="${' - ' + #numbers.formatDecimal(a.distanceKm != null ? a.distanceKm : 0, 1, 1) + ' km from ' + a.hotel.name}"></span>
+                        </small>
+                        <div class="d-flex gap-3">
+                            <a th:href="@{/attractions/{id}/edit(id=${a.id})}" class="btn btn-link btn-sm p-0">Edit</a>
+                            <form th:action="@{/attractions/{id}/delete(id=${a.id})}" method="post" class="m-0" onsubmit="return confirm('Remove this attraction?');">
+                                <button class="btn btn-link btn-sm text-danger p-0" type="submit">Remove</button>
+                            </form>
+                        </div>
+                    </div>
+                    <p th:if="${#lists.isEmpty(myAttractions)}" class="text-muted small">You have not recommended any experiences yet.</p>
+                </div>
+                <div class="col-lg-5">
+                    <form th:action="@{/attractions}" method="post" class="luxe-card p-3">
+                        <h6 class="fw-bold">Recommend an attraction or experience</h6>
+                        <input type="text" name="name" class="form-control form-control-sm mb-2" placeholder="Name" required maxlength="120">
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <select name="category" class="form-select form-select-sm">
+                                    <option th:each="c : ${categories}" th:value="${c}" th:text="${c}"></option>
+                                </select>
+                            </div>
+                            <div class="col-6"><input type="text" name="city" class="form-control form-control-sm" placeholder="Town / city" required maxlength="80"></div>
+                            <div class="col-12">
+                                <select name="hotelId" class="form-select form-select-sm">
+                                    <option value="">Not near a specific hotel</option>
+                                    <option th:each="h : ${hotels}" th:value="${h.id}" th:text="${'Near ' + h.name + ' (' + h.location + ')'}"></option>
+                                </select>
+                            </div>
+                            <div class="col-6"><input type="number" step="0.1" min="0" name="distanceKm" class="form-control form-control-sm" placeholder="Distance km"></div>
+                            <div class="col-6"><input type="number" step="1" min="0" name="estimatedCost" class="form-control form-control-sm" value="0" placeholder="Cost $" required></div>
+                        </div>
+                        <textarea name="description" class="form-control form-control-sm mb-2" rows="2" maxlength="1000" placeholder="Why tourists will love it"></textarea>
+                        <button class="btn btn-sm btn-dark w-100" type="submit">Add</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="none">
+    // Open the tab named in the URL hash (e.g. after saving a sample itinerary)
+    (function () {
+        var hash = window.location.hash;
+        if (!hash) return;
+        var btn = document.querySelector('[data-bs-target="' + hash + '"]');
+        if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+    })();
+</script>
+</body>
+</html>

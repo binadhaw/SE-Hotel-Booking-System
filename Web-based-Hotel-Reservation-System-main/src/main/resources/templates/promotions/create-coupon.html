@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Create Coupon Promotion')}">
+    <title>Create Coupon Promotion &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('promotions')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/promotions" class="text-decoration-none text-muted">Promotions</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Flash Coupon</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Launch Flash Coupon Promotion</h2>
+                </div>
+                <a href="/promotions" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back
+                </a>
+            </div>
+
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-ticket-detailed-fill text-warning fs-5"></i>
+                    <h5 class="mb-0 text-white fw-bold">Flash Coupon Parameters</h5>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+
+                    <form th:action="${promotion.id != null} ? @{/promotions/{id}/update(id=${promotion.id})} : @{/promotions}" th:object="${promotion}" method="post">
+                        <div th:replace="~{fragments/alerts :: alerts}"></div>
+                        <input type="hidden" th:field="*{type}" th:value="${T(com.Reservation.Hotel.model.Promotion.PromotionType).COUPON}" />
+
+                        <!-- Code -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-tag text-primary"></i> Promotional Code <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" th:field="*{code}" class="form-control luxe-form-control text-uppercase font-monospace fs-5" placeholder="e.g. FLASH20, WEEKEND30" required />
+                            <div class="form-text small text-muted">Guests will enter this exact code during checkout.</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-card-text text-secondary"></i> Offer Title &amp; Description <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" th:field="*{description}" class="form-control luxe-form-control" placeholder="e.g. 20% Off Weekend Flash Sale" required />
+                        </div>
+
+                        <!-- Discount Percentage -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-percent text-success"></i> Discount Percentage (%) <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" step="0.01" th:field="*{discountPercentage}" min="1" max="90" class="form-control luxe-form-control" placeholder="e.g. 20" required />
+                        </div>
+
+                        <!-- Recurring Timing Cycle -->
+                        <div class="mb-4 p-4 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                                <i class="bi bi-clock-history text-warning"></i>
+                                Recurring Flash Cycle Settings
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="luxe-form-label">
+                                        Repeat Interval (Minutes) <span class="text-muted fw-normal">(optional)</span>
+                                    </label>
+                                    <input type="number" th:field="*{intervalMinutes}" class="form-control luxe-form-control" placeholder="e.g. 30" min="1" />
+                                    <small class="text-muted">How often the cycle restarts.</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="luxe-form-label">
+                                        Active Duration (Minutes) <span class="text-muted fw-normal">(optional)</span>
+                                    </label>
+                                    <input type="number" th:field="*{durationMinutes}" class="form-control luxe-form-control" placeholder="e.g. 10" min="1" />
+                                    <small class="text-muted">How long code stays active per cycle.</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="luxe-form-label" for="couponEnds">
+                                        Coupon ends <span class="text-muted fw-normal">(optional)</span>
+                                    </label>
+                                    <input type="datetime-local" id="couponEnds" th:field="*{validUntil}" class="form-control luxe-form-control" />
+                                    <small class="text-muted">After this moment the code stops working and disappears from every page. Leave empty for no end date.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div th:replace="~{promotions/scope-fields :: scope(true)}"></div>
+
+                        <!-- Active Toggle -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <div class="form-check form-switch m-0">
+                                <input type="checkbox" th:field="*{active}" class="form-check-input" id="activeCheck" checked />
+                                <label class="form-check-label fw-semibold text-dark ms-2" for="activeCheck">
+                                    Activate Promotion Immediately
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="/promotions" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4">
+                                <i class="bi bi-check2-circle me-1"></i> Save Flash Coupon
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

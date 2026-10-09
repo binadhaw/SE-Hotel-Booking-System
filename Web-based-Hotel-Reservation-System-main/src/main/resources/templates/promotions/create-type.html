@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Select Promotion Type')}">
+    <title>Select Promotion Type &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('promotions')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 text-center">
+
+            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2 small">
+                Campaign Creator
+            </span>
+            <h2 class="display-6 fw-bold mb-2">Select Promotion Type</h2>
+            <p class="text-muted mb-5" style="max-width: 500px; margin: 0 auto;">
+                Choose whether to launch a recurring flash coupon code or a date-based seasonal discount.
+            </p>
+
+            <div class="row g-4 text-start">
+                <!-- Flash Coupon Card -->
+                <div class="col-md-6">
+                    <div class="luxe-card luxe-card-hover h-100 p-4 d-flex flex-column justify-content-between border-warning shadow-sm">
+                        <div>
+                            <div class="rounded-3 p-3 bg-warning-subtle text-warning d-inline-block fs-3 mb-3 border border-warning">
+                                <i class="bi bi-ticket-detailed-fill"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">Flash Coupon Code</h4>
+                            <p class="text-muted small mb-4">
+                                Creates an exclusive coupon code (e.g. <code>FLASH20</code>) that activates on a recurring cycle timer. Visible to guests only during active countdown windows.
+                            </p>
+                        </div>
+                        <a href="/promotions/new/coupon" class="btn btn-luxe-gold rounded-pill w-100 py-2.5">
+                            <i class="bi bi-arrow-right-circle me-1"></i> Configure Flash Coupon
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Standard Discount Card -->
+                <div class="col-md-6">
+                    <div class="luxe-card luxe-card-hover h-100 p-4 d-flex flex-column justify-content-between border-primary shadow-sm">
+                        <div>
+                            <div class="rounded-3 p-3 bg-primary-subtle text-primary d-inline-block fs-3 mb-3 border border-primary-subtle">
+                                <i class="bi bi-percent"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">Standard Seasonal Discount</h4>
+                            <p class="text-muted small mb-4">
+                                Applies general promotional discounts across bookings (e.g. Summer Getaway, Holiday Escape) within set start and end date calendars.
+                            </p>
+                        </div>
+                        <a href="/promotions/new/discount" class="btn btn-luxe-primary rounded-pill w-100 py-2.5">
+                            <i class="bi bi-arrow-right-circle me-1"></i> Configure Seasonal Discount
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-5">
+                <a href="/promotions" class="btn btn-outline-secondary btn-sm rounded-pill px-4">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Promotions
+                </a>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

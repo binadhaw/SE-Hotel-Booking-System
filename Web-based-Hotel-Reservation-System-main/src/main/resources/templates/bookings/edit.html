@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Modify Booking')}">
+    <title>Modify Booking &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('bookings')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/bookings" class="text-decoration-none text-muted">Reservations</a></li>
+                            <li class="breadcrumb-item active" aria-current="page" th:text="'Booking #' + ${booking.id}">Modify</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Modify Reservation #<span th:text="${booking.id}"></span></h2>
+                </div>
+                <a href="/bookings" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Reservations
+                </a>
+            </div>
+
+            <!-- HOTEL & PRICING NOTICE -->
+            <div class="luxe-card bg-light border-0 shadow-sm p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <small class="text-muted text-uppercase fw-bold">Hotel Property</small>
+                        <h4 class="fw-bold mb-0 text-dark" th:text="${hotel.name}">Grand Palace</h4>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted text-uppercase fw-bold">Paid to Date</small>
+                        <div class="fs-5 fw-bold text-success" th:text="'$' + ${#numbers.formatDecimal(booking.amountPaid, 1, 2)}">$0.00</div>
+                    </div>
+                </div>
+                <div class="p-3 bg-white rounded-3 border small text-muted">
+                    <i class="bi bi-info-circle text-primary me-1"></i>
+                    Modifying dates or suite categories recalculates your total price automatically. If the new total is higher, the difference becomes due for manager approval. If lower, an automatic refund credit is initiated.
+                </div>
+            </div>
+
+            <!-- EDIT FORM -->
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-pencil-square text-warning fs-5"></i>
+                    <h5 class="mb-0 text-white fw-bold">Updated Reservation Details</h5>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+
+                    <form th:action="@{/bookings/{id}/update(id=${booking.id})}" method="post" enctype="multipart/form-data">
+
+                        <!-- Select Room -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-door-open text-primary"></i> Select Suite / Room
+                            </label>
+                            <select id="roomSelect" name="roomId" class="form-select luxe-form-control" required>
+                                <option th:each="r : ${rooms}"
+                                        th:value="${r.id}"
+                                        th:selected="${booking.room != null and r.id == booking.room.id}"
+                                        th:attr="data-price=${r.price},data-guests=${r.maxGuests}"
+                                        th:text="${'Room #' + r.roomNumber + ' &mdash; ' + r.roomType + ' ($' + r.price + ' / night)' + (r.maxGuests != null ? ' &middot; Sleeps ' + r.maxGuests : '') + ' &middot; ' + r.bedSummary}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-calendar-check text-success"></i> Check-In Date
+                                </label>
+                                <input id="checkInDate" type="date" name="checkInDate" class="form-control luxe-form-control"
+                                       th:value="${booking.checkInDate}" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-calendar-x text-danger"></i> Check-Out Date
+                                </label>
+                                <input id="checkOutDate" type="date" name="checkOutDate" class="form-control luxe-form-control"
+                                       th:value="${booking.checkOutDate}" required />
+                            </div>
+                        </div>
+
+                        <!-- Guests -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-people text-secondary"></i> Guests <span class="text-danger">*</span>
+                            </label>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label for="adultsInput" class="form-text small fw-semibold text-dark mt-0 mb-1">Adults</label>
+                                    <input id="adultsInput" type="number" name="adults" min="1" max="20" th:value="${booking.adults != null ? booking.adults : booking.guests}"
+                                           class="form-control luxe-form-control" required />
+                                </div>
+                                <div class="col-sm-6">
+                                    <label for="childrenInput" class="form-text small fw-semibold text-dark mt-0 mb-1">Children</label>
+                                    <input id="childrenInput" type="number" name="children" min="0" max="20" th:value="${booking.children != null ? booking.children : 0}"
+                                           class="form-control luxe-form-control" required />
+                                </div>
+                            </div>
+                            <div class="form-text small text-muted mt-2">Total guests: <strong id="guestTotal">1</strong></div>
+                            <div id="roomCapacityHint" class="form-text small text-muted"></div>
+                            <div id="guestCapacityNote" class="alert alert-warning py-2 px-3 mt-2 mb-0 small d-none" role="alert"></div>
+                        </div>
+
+                        <!-- Promo Code -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-ticket-perforated text-warning"></i> Promo Code
+                                <span class="text-muted fw-normal small ms-1">(Optional)</span>
+                            </label>
+                            <input id="promoCode" type="text" name="promoCode" class="form-control luxe-form-control text-uppercase"
+                                   th:value="${booking.promoCode}" placeholder="Coupon code" />
+                        </div>
+
+                        <!-- Standard Discount -->
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-percent text-primary"></i> Standard Discount
+                                <span class="text-muted fw-normal small ms-1">(Optional &mdash; pick one, best of coupon or discount is applied)</span>
+                            </label>
+                            <select id="discountSelect" name="discountId" class="form-select luxe-form-control">
+                                <option value="" data-percent="0">No standard discount</option>
+                                <option th:each="d : ${activeDiscounts}"
+                                        th:value="${d.id}"
+                                        th:selected="${booking.discountId != null and booking.discountId == d.id}"
+                                        th:attr="data-percent=${d.discountPercentage}"
+                                        th:text="${(d.description != null ? d.description : 'Standard Discount') + ' - ' + d.discountPercentage + '% OFF'}">
+                                </option>
+                            </select>
+                            <div th:if="${#lists.isEmpty(activeDiscounts)}" class="small text-muted mt-2">
+                                <i class="bi bi-info-circle text-primary"></i> No standard discounts are running right now.
+                            </div>
+                        </div>
+
+                        <!-- Live Price Summary -->
+                        <div class="mb-4 p-4 rounded-3 border border-warning-subtle bg-warning-subtle">
+                            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-receipt-cutoff me-1"></i> Price Summary</h6>
+                            <div class="d-flex justify-content-between small text-secondary mb-1">
+                                <span>Nights</span>
+                                <span id="summaryNights">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-secondary mb-1">
+                                <span>Price / night</span>
+                                <span id="summaryPricePerNight">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-secondary mb-1">
+                                <span>Subtotal</span>
+                                <span id="summarySubtotal">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-success mb-2">
+                                <span id="summaryDiscountLabel">Discount</span>
+                                <span id="summaryDiscount">-$0.00</span>
+                            </div>
+                            <hr class="my-2" />
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-dark">New Total</span>
+                                <span id="summaryTotal" class="fs-4 fw-bold text-dark">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between small text-muted">
+                                <span>Already paid</span>
+                                <span th:text="'$' + ${#numbers.formatDecimal(booking.amountPaid, 1, 2)}">$0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Updated Payment Receipt -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-receipt text-primary"></i> Updated Payment Receipt
+                                <span class="text-muted fw-normal small ms-1">(Only needed if total increases)</span>
+                            </label>
+                            <input type="file" name="receiptFile" class="form-control luxe-form-control" accept="image/*,application/pdf" />
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="/bookings" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4">
+                                <i class="bi bi-check2-circle me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+<script th:inline="javascript">
+    var COUPON_URL = /*[[@{/promotions/check-coupon}]]*/ '/promotions/check-coupon';
+    var HOTEL_ID = /*[[${hotel.id}]]*/ 0;
+</script>
+<script th:inline="none">
+    (function () {
+        var roomSelect = document.getElementById('roomSelect');
+        var checkIn = document.getElementById('checkInDate');
+        var checkOut = document.getElementById('checkOutDate');
+        var promoInput = document.getElementById('promoCode');
+        var discountSelect = document.getElementById('discountSelect');
+
+        var elNights = document.getElementById('summaryNights');
+        var elPricePerNight = document.getElementById('summaryPricePerNight');
+        var elSubtotal = document.getElementById('summarySubtotal');
+        var elDiscount = document.getElementById('summaryDiscount');
+        var elDiscountLabel = document.getElementById('summaryDiscountLabel');
+        var elTotal = document.getElementById('summaryTotal');
+
+        function money(n) {
+            return '$' + n.toFixed(2);
+        }
+
+        // Mirrors BookingService.bestDiscountRate() on the backend: a coupon (checked against the
+        // Promotions table by the server) and a selected standard discount are never stacked -
+        // whichever gives the bigger saving is the one that is applied.
+        var verifiedCouponRate = 0;
+        function couponRate() {
+            return verifiedCouponRate;
+        }
+        function verifyCoupon() {
+            var code = (promoInput.value || '').trim();
+            if (!code) { verifiedCouponRate = 0; recalculate(); return; }
+            fetch(COUPON_URL + '?code=' + encodeURIComponent(code) + '&hotelId=' + HOTEL_ID)
+                .then(function (r) { return r.json(); })
+                .then(function (d) { verifiedCouponRate = d.valid ? d.percent / 100 : 0; recalculate(); })
+                .catch(function () { verifiedCouponRate = 0; recalculate(); });
+        }
+        promoInput.addEventListener('change', verifyCoupon);
+
+        function standardDiscountRate() {
+            var opt = discountSelect.options[discountSelect.selectedIndex];
+            var pct = opt ? parseFloat(opt.getAttribute('data-percent')) : 0;
+            return isNaN(pct) ? 0 : pct / 100;
+        }
+
+        function recalculate() {
+            var roomOpt = roomSelect.options[roomSelect.selectedIndex];
+            var pricePerNight = roomOpt ? parseFloat(roomOpt.getAttribute('data-price')) : 0;
+            if (isNaN(pricePerNight)) pricePerNight = 0;
+
+            var nights = 0;
+            if (checkIn.value && checkOut.value) {
+                var inDate = new Date(checkIn.value);
+                var outDate = new Date(checkOut.value);
+                var diffMs = outDate - inDate;
+                nights = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            }
+            if (nights <= 0) nights = 0;
+            var billableNights = nights > 0 ? nights : (pricePerNight > 0 ? 1 : 0);
+
+            var subtotal = pricePerNight * billableNights;
+
+            var cRate = couponRate();
+            var dRate = standardDiscountRate();
+            var bestRate = Math.max(cRate, dRate);
+            var discountAmount = subtotal * bestRate;
+            var total = subtotal - discountAmount;
+
+            elNights.textContent = nights > 0 ? nights : '0';
+            elPricePerNight.textContent = money(pricePerNight);
+            elSubtotal.textContent = money(subtotal);
+            elDiscount.textContent = '-' + money(discountAmount);
+            elTotal.textContent = money(total);
+
+            if (bestRate > 0 && dRate > cRate) {
+                elDiscountLabel.textContent = 'Standard Discount (' + Math.round(dRate * 100) + '%)';
+            } else if (bestRate > 0) {
+                elDiscountLabel.textContent = 'Coupon Discount (' + Math.round(cRate * 100) + '%)';
+            } else {
+                elDiscountLabel.textContent = 'Discount';
+            }
+        }
+
+        [roomSelect, checkIn, checkOut, promoInput, discountSelect].forEach(function (el) {
+            el.addEventListener('input', recalculate);
+            el.addEventListener('change', recalculate);
+        });
+
+        verifyCoupon();
+    })();
+</script>
+
+<script th:inline="none">
+    (function () {
+        var room = document.getElementById('roomSelect');
+        var adults = document.getElementById('adultsInput');
+        var children = document.getElementById('childrenInput');
+        var totalEl = document.getElementById('guestTotal');
+        var hint = document.getElementById('roomCapacityHint');
+        var note = document.getElementById('guestCapacityNote');
+        if (!room || !adults || !children || !note) return;
+
+        function num(el) {
+            var n = parseInt(el.value, 10);
+            return isNaN(n) || n < 0 ? 0 : n;
+        }
+
+        function check() {
+            var total = num(adults) + num(children);
+            if (totalEl) totalEl.textContent = total;
+
+            var opt = room.options[room.selectedIndex];
+            var cap = opt ? parseInt(opt.getAttribute('data-guests'), 10) : NaN;
+
+            if (!isNaN(cap)) {
+                hint.textContent = 'This room is recommended for up to ' + cap + (cap === 1 ? ' guest.' : ' guests.');
+            } else {
+                hint.textContent = '';
+            }
+
+            if (!isNaN(cap) && total > cap) {
+                note.textContent = 'Warning: you entered ' + total + (total === 1 ? ' guest' : ' guests')
+                    + ', but this room is recommended for up to ' + cap + (cap === 1 ? ' guest' : ' guests')
+                    + '. You can still book it, but it may feel crowded - consider a larger room.';
+                note.classList.remove('d-none');
+            } else {
+                note.classList.add('d-none');
+            }
+        }
+
+        room.addEventListener('change', check);
+        adults.addEventListener('input', check);
+        children.addEventListener('input', check);
+        check();
+    })();
+</script>
+
+</body>
+</html>

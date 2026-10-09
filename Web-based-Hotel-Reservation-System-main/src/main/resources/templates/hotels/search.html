@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Find a hotel')}">
+    <title>Find a hotel</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('hotels')}"></div>
+
+<main class="app-content container my-4 my-md-5">
+
+    <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+        <div>
+            <h2 class="h3 fw-bold mb-0"><i class="bi bi-search text-warning me-2"></i>Find a hotel</h2>
+            <small class="text-muted"><span th:text="${#lists.size(results)}">0</span> hotel(s) match your search</small>
+        </div>
+        <a sec:authorize="hasRole('USER')" th:href="@{/agents/explore}" class="btn btn-outline-dark btn-sm rounded-pill px-3">
+            <i class="bi bi-compass me-1"></i> Plan a trip with a travel agent
+        </a>
+    </div>
+
+    <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+    <div class="row g-4">
+        <!-- FILTERS -->
+        <div class="col-lg-3">
+            <form th:action="@{/hotels}" method="get" th:object="${criteria}" class="luxe-card p-3 position-sticky" style="top: 1rem;">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold mb-1">Destination or hotel</label>
+                    <input type="text" th:field="*{keyword}" class="form-control" placeholder="e.g. Kandy">
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1">Check-in</label>
+                        <input type="date" th:field="*{checkIn}" th:min="${today}" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-semibold mb-1">Check-out</label>
+                        <input type="date" th:field="*{checkOut}" th:min="${today}" class="form-control form-control-sm">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold mb-1">Guests</label>
+                    <input type="number" min="1" max="40" th:field="*{guests}" class="form-control form-control-sm" placeholder="Any">
+                    <div class="form-text">Families: we combine rooms to fit everyone.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold mb-1">Price per night (USD)</label>
+                    <div class="input-group input-group-sm">
+                        <input type="number" min="0" step="1" th:field="*{minPrice}" class="form-control" placeholder="Min">
+                        <span class="input-group-text">&ndash;</span>
+                        <input type="number" min="0" step="1" th:field="*{maxPrice}" class="form-control" placeholder="Max">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold mb-1">Facilities</label>
+                    <div style="max-height: 220px; overflow-y: auto;" class="border rounded p-2">
+                        <div class="form-check small" th:each="a : ${amenityIcons}">
+                            <input class="form-check-input" type="checkbox" name="amenities" th:value="${a.key}"
+                                   th:id="${'am-' + a.key.hashCode()}" th:checked="${criteria.amenities.contains(a.key)}">
+                            <label class="form-check-label" th:for="${'am-' + a.key.hashCode()}">
+                                <i class="bi" th:classappend="${a.value}"></i> <span th:text="${a.key}">WiFi</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold mb-1">Sort by</label>
+                    <select th:field="*{sort}" class="form-select form-select-sm">
+                        <option value="recommended">Recommended</option>
+                        <option value="price_asc">Price: low to high</option>
+                        <option value="price_desc">Price: high to low</option>
+                        <option value="rating">Guest rating</option>
+                        <option value="name">Name</option>
+                    </select>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-luxe-gold">Search</button>
+                    <a th:href="@{/hotels}" class="btn btn-outline-secondary btn-sm">Clear filters</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- RESULTS -->
+        <div class="col-lg-9">
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-4" th:each="r : ${results}">
+                    <div class="hotel-card">
+                        <a th:href="@{/hotels/{id}(id=${r.hotel.id},checkIn=${criteria.checkIn},checkOut=${criteria.checkOut},guests=${criteria.guests})}" class="text-decoration-none">
+                            <img th:if="${r.hotel.coverImage != null}" th:src="@{${r.hotel.coverImage}}" class="hotel-card-image" alt="Hotel photo">
+                            <div th:unless="${r.hotel.coverImage != null}" class="hotel-card-image d-flex align-items-center justify-content-center text-white-50 fs-1">
+                                <i class="bi bi-building"></i>
+                            </div>
+                        </a>
+                        <div class="p-3 d-flex flex-column flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <h6 class="fw-bold mb-1">
+                                    <a th:href="@{/hotels/{id}(id=${r.hotel.id},checkIn=${criteria.checkIn},checkOut=${criteria.checkOut},guests=${criteria.guests})}"
+                                       class="text-dark text-decoration-none" th:text="${r.hotel.name}">Hotel</a>
+                                </h6>
+                                <span th:if="${r.reviewCount > 0}" class="badge bg-warning-subtle text-dark border border-warning-subtle">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    <span th:text="${#numbers.formatDecimal(r.averageRating, 1, 1)}">4.5</span>
+                                </span>
+                            </div>
+                            <div class="small text-muted mb-2"><i class="bi bi-geo-alt-fill text-danger"></i> <span th:text="${r.hotel.location}">Galle</span></div>
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                <span class="amenity-chip" th:each="a, st : ${r.hotel.amenityList}" th:if="${st.index < 3}">
+                                    <i class="bi" th:classappend="${amenityIcons.containsKey(a) ? amenityIcons.get(a) : 'bi-check2'}"></i>
+                                    <span th:text="${a}">WiFi</span>
+                                </span>
+                                <span class="small text-muted" th:if="${#lists.size(r.hotel.amenityList) > 3}"
+                                      th:text="'+' + ${#lists.size(r.hotel.amenityList) - 3} + ' more'"></span>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-between align-items-end">
+                                <div>
+                                    <small class="text-muted d-block" th:text="${criteria.hasDates() ? r.matchingRooms + ' room(s) free' : 'from'}">from</small>
+                                    <span class="fw-bold fs-5" th:text="${r.fromPrice != null ? '$' + #numbers.formatDecimal(r.fromPrice, 1, 2) : 'No rooms yet'}">$100</span>
+                                    <small class="text-muted" th:if="${r.fromPrice != null}">/night</small>
+                                </div>
+                                <a th:href="@{/hotels/{id}(id=${r.hotel.id},checkIn=${criteria.checkIn},checkOut=${criteria.checkOut},guests=${criteria.guests})}"
+                                   class="btn btn-sm btn-luxe-primary rounded-pill px-3">View</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12" th:if="${#lists.isEmpty(results)}">
+                    <div class="luxe-card p-5 text-center text-muted">
+                        <i class="bi bi-building-slash fs-1 d-block mb-2"></i>
+                        <h5 class="fw-bold text-secondary">No hotels match your filters</h5>
+                        <p class="small mb-3">Try a wider price range, fewer facilities or different dates.</p>
+                        <a th:href="@{/hotels}" class="btn btn-outline-dark btn-sm rounded-pill px-3">Clear filters</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

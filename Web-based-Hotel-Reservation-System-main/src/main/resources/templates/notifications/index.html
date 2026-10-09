@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Notifications')}">
+    <title>Notifications</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('notifications')}"></div>
+
+<main class="app-content container my-5" style="max-width: 820px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h3 fw-bold mb-0"><i class="bi bi-bell-fill text-warning me-2"></i>Notifications</h2>
+        <div class="d-flex gap-2">
+            <form th:action="@{/notifications/read-all}" method="post" th:if="${unreadNotifications > 0}" class="m-0">
+                <button class="btn btn-sm btn-outline-dark rounded-pill px-3" type="submit"><i class="bi bi-check2-all me-1"></i> Mark all as read</button>
+            </form>
+            <form th:action="@{/notifications/clear-read}" method="post" th:if="${!#lists.isEmpty(notifications)}" class="m-0"
+                  onsubmit="return confirm('Delete all notifications you have already read?');">
+                <button class="btn btn-sm btn-outline-danger rounded-pill px-3" type="submit"><i class="bi bi-trash3 me-1"></i> Clear read</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="luxe-card">
+        <div th:each="n : ${notifications}" class="d-flex align-items-start border-bottom" th:classappend="${!n.readFlag} ? 'notification-unread'">
+        <a th:href="@{/notifications/{id}/open(id=${n.id})}" class="d-flex gap-3 p-3 flex-grow-1 text-decoration-none text-dark">
+            <i class="bi fs-5" th:classappend="${n.readFlag ? 'bi-envelope-open text-muted' : 'bi-envelope-fill text-warning'}"></i>
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between gap-2">
+                    <strong th:text="${n.title}">Title</strong>
+                    <small class="text-muted text-nowrap" th:text="${#temporals.format(n.createdAt, 'dd MMM yyyy HH:mm')}"></small>
+                </div>
+                <div class="small text-secondary" th:text="${n.message}">Message</div>
+            </div>
+        </a>
+        <form th:action="@{/notifications/{id}/delete(id=${n.id})}" method="post" class="m-0 p-3">
+            <button type="submit" class="btn btn-sm btn-link text-muted p-0" title="Delete notification" aria-label="Delete notification"><i class="bi bi-x-lg"></i></button>
+        </form>
+        </div>
+        <div th:if="${#lists.isEmpty(notifications)}" class="p-5 text-center text-muted">
+            <i class="bi bi-bell-slash fs-1 d-block mb-2"></i> No notifications yet.
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

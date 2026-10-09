@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Admin - Agent Verification')}">
+    <title>Admin - Agent Verification &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('agent_admin')}"></div>
+
+<main class="app-content container my-5">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 small">
+                    <li class="breadcrumb-item"><a href="/hotels" class="text-decoration-none text-muted">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Admin Reviews</li>
+                </ol>
+            </nav>
+            <h2 class="h3 fw-bold mb-0">
+                <i class="bi bi-shield-check text-warning me-2"></i> Travel Agent Document Verification &amp; Approvals
+            </h2>
+        </div>
+        <a href="/hotels" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- SUCCESS ALERT -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm border-0 d-flex align-items-center gap-2 mb-4" role="alert">
+        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+        <div class="flex-grow-1 fw-medium" th:text="${successMessage}"></div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- PENDING DOCUMENT REVIEWS -->
+    <div class="d-flex align-items-center gap-2 mb-3 mt-4">
+        <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold">Action Required</span>
+        <h4 class="h5 fw-bold mb-0 text-dark">Pending Approvals &amp; Document Reviews</h4>
+    </div>
+
+    <div class="luxe-table-container mb-5">
+        <div class="table-responsive">
+            <table class="luxe-table">
+                <thead>
+                <tr>
+                    <th>Agency / Agent Name</th>
+                    <th>Contact Phone</th>
+                    <th>Submitted Credentials</th>
+                    <th>Experience</th>
+                    <th>Current Score</th>
+                    <th class="text-end pe-4" style="min-width: 280px;">Verification Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="ag : ${pendingAgents}">
+                    <td>
+                        <div class="fw-bold text-dark fs-6" th:text="${ag.agencyName}">Agency Name</div>
+                        <small class="text-muted" th:text="'ID #' + ${ag.id}">ID #1</small>
+                    </td>
+                    <td class="text-secondary" th:text="${ag.phone}">+1 800 555 0199</td>
+                    <td>
+                        <a th:if="${ag.documentsSubmittedUrl != null}" th:href="${ag.documentsSubmittedUrl}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Review Docs
+                        </a>
+                        <span th:if="${ag.documentsSubmittedUrl == null}" class="text-muted small fst-italic">No URL provided</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill" th:text="${ag.experienceYears} + ' Yrs'">3 Yrs</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-info-subtle text-info border border-info-subtle px-2.5 py-1 rounded-pill fw-bold" th:text="${ag.rankingScore}">0</span>
+                    </td>
+                    <td class="text-end pe-4">
+                        <div class="d-flex gap-1.5 justify-content-end align-items-center">
+                            <form th:action="@{/agents/admin/{id}/approve(id=${ag.id})}" method="post" class="m-0 d-inline">
+                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-3">
+                                    <i class="bi bi-check-lg me-1"></i> Approve
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-warning rounded-pill px-2.5 text-dark fw-medium" data-bs-toggle="collapse" th:data-bs-target="'#req-' + ${ag.id}">
+                                <i class="bi bi-question-circle me-1"></i> Request Info
+                            </button>
+                            <form th:action="@{/agents/admin/{id}/delete(id=${ag.id})}" method="post" class="m-0 d-inline" onsubmit="return confirm('Delete this agent request?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="collapse mt-2" th:id="'req-' + ${ag.id}">
+                            <form th:action="@{/agents/admin/{id}/request-info(id=${ag.id})}" method="post" class="d-flex gap-1 justify-content-end">
+                                <input type="text" name="adminNote" class="form-control form-control-sm luxe-form-control" placeholder="Specify required information..." required />
+                                <button type="submit" class="btn btn-sm btn-primary rounded-pill px-3">Send</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(pendingAgents)}">
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-shield-check text-success fs-1 d-block mb-2"></i>
+                        <h6 class="fw-bold text-dark">No pending verification requests</h6>
+                        <small>All agent verification documents have been processed.</small>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- APPROVED ACTIVE AGENTS ROSTER -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-success text-white px-2.5 py-1 rounded-pill fw-bold">Active Roster</span>
+        <h4 class="h5 fw-bold mb-0 text-dark">Approved Active Travel Agents</h4>
+    </div>
+
+    <div class="luxe-table-container">
+        <div class="table-responsive">
+            <table class="luxe-table">
+                <thead>
+                <tr>
+                    <th>Agency Name</th>
+                    <th>Contact Phone</th>
+                    <th>Jobs Completed</th>
+                    <th>Reward Points</th>
+                    <th>Ranking Score</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="app : ${approvedAgents}">
+                    <td>
+                        <div class="fw-bold text-dark" th:text="${app.agencyName}">Agency</div>
+                    </td>
+                    <td class="text-secondary" th:text="${app.phone}">+1 800 555 0199</td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2.5 py-1 rounded-pill" th:text="${app.completedJobs} + ' Jobs'">0 Jobs</span>
+                    </td>
+                    <td>
+                        <span class="fw-bold text-warning" th:text="${app.rewardPoints}">0</span>
+                    </td>
+                    <td>
+                        <span class="luxe-pill pill-approved" th:text="${app.rankingScore}">0</span>
+                    </td>
+                    <td class="text-end pe-4">
+                        <form th:action="@{/agents/admin/{id}/delete(id=${app.id})}" method="post" class="m-0 d-inline" onsubmit="return confirm('Revoke approval and delete agent?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-trash3 me-1"></i> Revoke &amp; Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(approvedAgents)}">
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        No approved agents currently active in the system.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>

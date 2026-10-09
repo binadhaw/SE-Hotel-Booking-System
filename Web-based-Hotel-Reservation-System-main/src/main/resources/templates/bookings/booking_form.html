@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Quick Room Booking')}">
+    <title>Quick Room Booking &bull; Aura Grand Luxe Hotels</title>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar('bookings')}"></div>
+
+<main class="app-content container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-1 small">
+                            <li class="breadcrumb-item"><a href="/hotels" class="text-decoration-none text-muted">Hotels</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Quick Reserve</li>
+                        </ol>
+                    </nav>
+                    <h2 class="h3 fw-bold mb-0">Book a Suite &mdash; <span class="text-primary" th:text="${hotel.name}">Hotel Name</span></h2>
+                </div>
+                <a href="/hotels" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back
+                </a>
+            </div>
+
+            <div class="luxe-card shadow-sm">
+                <div class="luxe-card-header dark py-3 px-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-plus text-warning fs-5"></i>
+                    <h5 class="mb-0 text-white fw-bold">Reservation Details</h5>
+                </div>
+                <div class="luxe-card-body p-4 p-md-5">
+
+                    <form th:action="@{/bookings/save}" th:object="${booking}" method="post">
+                        <input type="hidden" name="hotel.id" th:value="${hotel.id}" />
+
+                        <!-- Select Room -->
+                        <div class="mb-4">
+                            <label class="luxe-form-label">
+                                <i class="bi bi-door-open text-primary"></i> Select Suite / Room
+                            </label>
+                            <select class="form-select luxe-form-control" th:field="*{room.id}" required>
+                                <option value="" disabled selected>Choose a room...</option>
+                                <option th:each="room : ${rooms}"
+                                        th:value="${room.id}"
+                                        th:text="${room.roomType + ' &mdash; $' + room.price + ' per night'}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Customer Details -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-person text-secondary"></i> Customer Full Name
+                                </label>
+                                <input type="text" th:field="*{customerName}" class="form-control luxe-form-control" required placeholder="e.g. John Doe" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-envelope text-secondary"></i> Email Address
+                                </label>
+                                <input type="email" th:field="*{customerEmail}" class="form-control luxe-form-control" required placeholder="name@example.com" />
+                            </div>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-calendar-check text-success"></i> Check-In Date
+                                </label>
+                                <input type="date" th:field="*{checkInDate}" class="form-control luxe-form-control" required />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="luxe-form-label">
+                                    <i class="bi bi-calendar-x text-danger"></i> Check-Out Date
+                                </label>
+                                <input type="date" th:field="*{checkOutDate}" class="form-control luxe-form-control" required />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="/hotels" class="btn btn-luxe-outline rounded-pill">Cancel</a>
+                            <button type="submit" class="btn btn-luxe-gold rounded-pill px-4">
+                                <i class="bi bi-check2-circle me-1"></i> Confirm Reservation
+                            </button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>
